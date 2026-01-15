@@ -56,12 +56,10 @@ export const api = {
       await delay(500);
       let visits = MOCK_MED_VISITS;
       
-      // Lọc theo bệnh nhân cụ thể nếu có
       if (params?.patientId) {
           visits = visits.filter(v => v.patientId === params.patientId);
       }
 
-      // Lọc chỉ những lần khám có kê thuốc (Requirement: hasMedication=true)
       if (params?.hasMedication) {
           visits = visits.filter(v => v.lastMedicationOrderAt !== undefined);
       }
@@ -262,7 +260,14 @@ export const api = {
 
   getMedicationDashboardStats: async (params: { deptCode: string, keyword: string }) => {
       await delay(500);
-      return { pendingGroups: [] };
+      let groups = MOCK_MED_GROUPS;
+      if (params.keyword) {
+          groups = groups.filter(g => 
+              g.patientName.toLowerCase().includes(params.keyword.toLowerCase()) || 
+              g.patientCode.includes(params.keyword)
+          );
+      }
+      return { pendingGroups: groups };
   },
 
   getRoundDashboardStats: async () => {
