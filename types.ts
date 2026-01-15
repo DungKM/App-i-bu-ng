@@ -127,7 +127,7 @@ export enum MedVisitStatus {
   FULLY_DISPENSED = 'FULLY_DISPENSED'
 }
 
-/* Fix: Missing MedVisit interface */
+/* Fix: Added missing room and bed properties to MedVisit interface */
 export interface MedVisit {
   id: string;
   patientId: string;
@@ -135,6 +135,8 @@ export interface MedVisit {
   patientCode: string;
   patientGender: string;
   deptCode: string;
+  room: string;
+  bed: string;
   admissionDate: string;
   status: MedVisitStatus;
   marSummary?: {

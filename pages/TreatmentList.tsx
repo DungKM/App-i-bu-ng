@@ -16,7 +16,7 @@ const statusColors = {
 
 export const TreatmentList: React.FC = () => {
   const [keyword, setKeyword] = useState('');
-  const [deptCode, setDeptCode] = useState('NOI1');
+  const deptCode = 'NOI1'; // Cố định theo tài khoản
   const [status, setStatus] = useState<TreatmentStatus | ''>(TreatmentStatus.IN_PROGRESS);
 
   const { data: treatments, isLoading } = useQuery({
@@ -28,37 +28,46 @@ export const TreatmentList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold text-slate-900 uppercase">Danh sách đi buồng</h1>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-             <select value={deptCode} onChange={e => setDeptCode(e.target.value)} className="px-3 py-2 border rounded-lg bg-white text-sm">
-                <option value="">Tất cả khoa</option>
-                <option value="NOI1">Nội 1</option>
-                <option value="NGOAI">Ngoại</option>
-            </select>
-            <div className="relative md:col-span-2">
+        <div className="flex flex-col md:flex-row gap-3">
+            <div className="bg-blue-50 text-primary px-4 py-2 rounded-lg font-black text-sm border border-blue-100 flex items-center gap-2 whitespace-nowrap">
+                <i className="fa-solid fa-hospital"></i> Khoa Nội Tổng Hợp
+            </div>
+            <div className="relative flex-1">
                 <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" placeholder="Tìm BN, mã, giường..." className="pl-10 pr-4 py-2 w-full rounded-lg border" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+                <input type="text" placeholder="Tìm BN, mã, giường..." className="pl-10 pr-4 py-2 w-full rounded-lg border focus:ring-2 focus:ring-primary/20 outline-none" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
             </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {treatments?.map(t => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {isLoading ? (
+             <div className="col-span-full text-center py-20"><i className="fa-solid fa-circle-notch fa-spin text-4xl text-primary"></i></div>
+        ) : treatments?.map(t => (
           <Link key={t.id} to={`/treatment/${t.id}`} className="block group">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 relative overflow-hidden">
+            <div className="bg-white rounded-[24px] shadow-sm border border-slate-100 p-5 relative overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="flex gap-4">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex flex-col items-center justify-center font-bold border border-blue-100">
-                    <span className="text-[10px] opacity-60">G</span>
-                    <span className="text-lg leading-none">{t.bed || '--'}</span>
+                <div className="w-14 h-14 bg-blue-50 text-primary rounded-2xl flex flex-col items-center justify-center font-black border border-blue-100 shadow-inner">
+                    <span className="text-[10px] opacity-40 uppercase">Giường</span>
+                    <span className="text-xl leading-none">{t.bed || '--'}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 truncate group-hover:text-primary transition">{t.patientName}</h3>
-                    <div className="text-xs text-slate-500 mb-1">{t.patientCode} • {t.patientGender}</div>
-                    <p className="text-sm text-slate-600 truncate"><i className="fa-solid fa-user-doctor mr-1.5 text-slate-400"></i>{t.doctorName}</p>
+                    <h3 className="font-black text-slate-900 truncate group-hover:text-primary transition uppercase tracking-tight">{t.patientName}</h3>
+                    <div className="text-xs font-bold text-slate-400 mb-2">{t.patientCode} • {t.patientGender}</div>
+                    <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <i className="fa-solid fa-user-doctor text-slate-400"></i>
+                        <span className="text-sm font-bold text-slate-600 truncate">{t.doctorName}</span>
+                    </div>
                 </div>
               </div>
             </div>
           </Link>
         ))}
+        {treatments?.length === 0 && !isLoading && (
+            <div className="col-span-full text-center py-20 text-slate-400">
+                <i className="fa-solid fa-user-slash text-5xl mb-3 opacity-20"></i>
+                <p className="font-bold">Không tìm thấy bệnh nhân nào.</p>
+            </div>
+        )}
       </div>
     </div>
   );

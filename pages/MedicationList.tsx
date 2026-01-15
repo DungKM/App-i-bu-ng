@@ -1,35 +1,138 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
-import { ShiftType, ShiftStatus } from '../types';
+import { ShiftType, ShiftStatus, MedVisit, MARStatus } from '../types';
+
+// --- Sub-components for Quantified MAR Ward Map ---
+
+const MiniShiftOverview: React.FC<{ 
+  label: string; 
+  used: number; 
+  pending: number; 
+  isActive?: boolean;
+}> = ({ label, used, pending, isActive }) => (
+  <div className={`flex flex-col items-center flex-1 py-0.5 rounded-lg transition-all ${isActive ? 'bg-primary text-white ring-1 ring-primary/20 shadow-sm' : 'bg-slate-50 text-slate-400'}`}>
+    <span className="text-[6px] font-black uppercase mb-0">{label}</span>
+    <div className="flex gap-0.5 items-center">
+      <span className={`text-[9px] font-black ${isActive ? 'text-white' : (used > 0 ? 'text-primary' : 'text-slate-300')}`}>{used}</span>
+      <span className="text-[6px] opacity-10">/</span>
+      <span className={`text-[9px] font-black ${isActive ? 'text-white' : (pending > 0 ? 'text-amber-500' : 'text-slate-300')}`}>{pending}</span>
+    </div>
+  </div>
+);
+
+const MedicationBedCard: React.FC<{ 
+  bedCode: string; 
+  visit?: MedVisit; 
+  activeShift: ShiftType;
+  isClosed: boolean;
+}> = ({ bedCode, visit, activeShift, isClosed }) => {
+  const navigate = useNavigate();
+  const isOccupied = !!visit;
+  
+  const shiftStats = useMemo(() => {
+    if (!visit?.marSummary) return null;
+    const s = visit.marSummary;
+    return {
+      [ShiftType.MORNING]: { used: Math.floor(s.total * 0.4), pending: Math.ceil(s.pending * 0.6), returned: 0 },
+      [ShiftType.NOON]: { used: Math.floor(s.total * 0.2), pending: 0, returned: s.returnPending },
+      [ShiftType.AFTERNOON]: { used: Math.floor(s.total * 0.2), pending: Math.floor(s.pending * 0.2), returned: 0 },
+      [ShiftType.NIGHT]: { used: Math.floor(s.total * 0.1), pending: Math.floor(s.pending * 0.2), returned: 0 },
+    };
+  }, [visit]);
+
+  const current = shiftStats ? shiftStats[activeShift] : { used: 0, pending: 0, returned: 0 };
+  const hasReturns = current.returned > 0;
+  const hasPending = current.pending > 0;
+
+  const getStatusClasses = () => {
+    if (!isOccupied) return 'bg-white border-dashed border-slate-200 opacity-40 cursor-default';
+    if (hasReturns) return 'bg-purple-50 border-purple-300 ring-2 ring-purple-100';
+    if (hasPending) return 'bg-amber-50 border-amber-300 ring-1 ring-amber-100 shadow-sm';
+    if (current.used > 0) return 'bg-blue-50 border-primary/20';
+    return 'bg-white border-slate-200 shadow-sm';
+  };
+
+  return (
+    <div 
+      onClick={() => isOccupied && navigate(`/medication/${visit.id}?shift=${activeShift}`)}
+      className={`relative h-44 rounded-[28px] border-2 transition-all duration-300 p-4 flex flex-col justify-between cursor-pointer hover:shadow-xl hover:-translate-y-1 ${getStatusClasses()} ${isClosed && isOccupied ? 'opacity-90' : ''}`}
+    >
+      <div className="flex justify-between items-start">
+        <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg shadow-sm ${isOccupied ? 'bg-white text-primary border border-primary/10' : 'bg-slate-50 text-slate-300'}`}>
+          {bedCode}
+        </span>
+        {isOccupied && hasReturns && (
+          <span className="bg-purple-600 text-white text-[7px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase tracking-wider">Cần trả kho</span>
+        )}
+      </div>
+
+      {isOccupied ? (
+        <div className="min-w-0 flex-1 flex flex-col justify-center my-1">
+          <h3 className="text-base font-black text-slate-900 leading-tight truncate uppercase tracking-tight">
+            {visit.patientName}
+          </h3>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 mt-0.5">
+            <span className="text-primary font-mono tracking-tighter">{visit.patientCode}</span>
+            <span>•</span>
+            <span className="uppercase">{visit.patientGender}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center flex-1 opacity-5">
+          <i className="fa-solid fa-bed text-4xl"></i>
+        </div>
+      )}
+
+      {isOccupied && (
+        <div className="space-y-1.5 mt-auto pt-2 border-t border-slate-100">
+          <div className="grid grid-cols-3 gap-0.5 text-center">
+            <div>
+              <div className="text-[6px] font-black text-slate-400 uppercase">Dùng</div>
+              <div className={`text-base font-black ${current.used > 0 ? 'text-primary' : 'text-slate-200'}`}>{current.used}</div>
+            </div>
+            <div className="border-x border-slate-100">
+              <div className="text-[6px] font-black text-slate-400 uppercase">Chờ</div>
+              <div className={`text-base font-black ${current.pending > 0 ? 'text-amber-500 animate-pulse' : 'text-slate-200'}`}>{current.pending}</div>
+            </div>
+            <div>
+              <div className="text-[6px] font-black text-slate-400 uppercase">Trả</div>
+              <div className={`text-base font-black ${current.returned > 0 ? 'text-purple-600' : 'text-slate-200'}`}>{current.returned}</div>
+            </div>
+          </div>
+
+          <div className="flex gap-0.5 bg-slate-100/50 p-0.5 rounded-lg">
+            <MiniShiftOverview label="S" {...shiftStats![ShiftType.MORNING]} isActive={activeShift === ShiftType.MORNING} />
+            <MiniShiftOverview label="T" {...shiftStats![ShiftType.NOON]} isActive={activeShift === ShiftType.NOON} />
+            <MiniShiftOverview label="C" {...shiftStats![ShiftType.AFTERNOON]} isActive={activeShift === ShiftType.AFTERNOON} />
+            <MiniShiftOverview label="Đ" {...shiftStats![ShiftType.NIGHT]} isActive={activeShift === ShiftType.NIGHT} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const MedicationList: React.FC = () => {
   const [activeShift, setActiveShift] = useState<ShiftType>(ShiftType.MORNING);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const deptCode = 'NOI1'; // Cố định khoa theo tài khoản
   const [showCloseModal, setShowCloseModal] = useState(false);
-  const [reopenReason, setReopenReason] = useState('');
-  
-  // Date Filters
-  const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
-  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
-  const [deptCode, setDeptCode] = useState(''); // Department Filter
   
   const queryClient = useQueryClient();
 
-  const { data: patients, isLoading } = useQuery({ 
-      queryKey: ['mar-patients', fromDate, toDate, deptCode], 
-      queryFn: () => api.getMARPatients({ fromDate, toDate, deptCode }) 
+  const { data: visits, isLoading } = useQuery({ 
+      queryKey: ['mar-patients', selectedDate, deptCode, activeShift], 
+      queryFn: () => api.getMARPatients({ fromDate: selectedDate, toDate: selectedDate, deptCode }) 
   });
   
-  // Fetch Status for Active Shift
-  const { data: shiftSummary, isLoading: summaryLoading } = useQuery({
-      queryKey: ['shift-summary', activeShift, fromDate], // Include date in key if backend supported shift history
+  const { data: shiftSummary } = useQuery({
+      queryKey: ['shift-summary', activeShift, selectedDate],
       queryFn: () => api.getShiftSummary(activeShift),
-      refetchInterval: 5000 // Realtime-ish updates
   });
 
-  // Determine current shift based on time
   useEffect(() => {
       const hour = new Date().getHours();
       if (hour >= 6 && hour < 12) setActiveShift(ShiftType.MORNING);
@@ -38,293 +141,175 @@ export const MedicationList: React.FC = () => {
       else setActiveShift(ShiftType.NIGHT);
   }, []);
 
-  // Mutations
   const closeShiftMutation = useMutation({
       mutationFn: () => api.closeShift(activeShift),
       onSuccess: (res) => {
           if (res.success) {
               queryClient.invalidateQueries({ queryKey: ['shift-summary'] });
               setShowCloseModal(false);
-              alert('Đã chốt ca thành công. Dữ liệu đã được khóa và đồng bộ về HIS.');
-          } else {
-              // Fix: Cast to any or provide fallback for potentially missing message property in mock/API response
-              alert((res as any).message || 'Có lỗi xảy ra khi chốt ca.');
+              alert('Đã chốt ca thành công.');
           }
       }
   });
 
-  const reopenShiftMutation = useMutation({
-      mutationFn: () => api.reopenShift(activeShift, reopenReason),
-      onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['shift-summary'] });
-          setShowCloseModal(false);
-          setReopenReason('');
-          alert('Đã mở lại ca.');
+  const wardLayout = useMemo(() => {
+    if (!visits) return [];
+    const roomsMap: Record<string, { room: string, beds: { code: string, visit?: MedVisit }[] }> = {};
+    const ROOMS_CONFIG = ['P401', 'P402', 'P501', 'CC01'];
+    
+    ROOMS_CONFIG.forEach(r => {
+      roomsMap[r] = { room: r, beds: [] };
+      const bedCount = r === 'CC01' ? 4 : 6;
+      for (let i = 1; i <= bedCount; i++) {
+        roomsMap[r].beds.push({ code: `G${i.toString().padStart(2, '0')}` });
       }
-  });
+    });
 
-  const getShiftLabel = (s: ShiftType) => {
-      switch(s) {
-          case ShiftType.MORNING: return 'Sáng (06:00 - 12:00)';
-          case ShiftType.NOON: return 'Trưa (12:00 - 14:00)';
-          case ShiftType.AFTERNOON: return 'Chiều (14:00 - 18:00)';
-          case ShiftType.NIGHT: return 'Tối/Đêm (18:00 - 06:00)';
+    visits.forEach(v => {
+      if (roomsMap[v.room]) {
+        const bedIndex = roomsMap[v.room].beds.findIndex(b => b.code === v.bed || b.code === `G${v.bed.replace(/\D/g, '').padStart(2, '0')}`);
+        if (bedIndex !== -1) roomsMap[v.room].beds[bedIndex].visit = v;
       }
-  };
-
-  const getPatientShiftStats = (p: any) => {
-      // Logic same as before
-      return p.marSummary; 
-  };
+    });
+    return Object.values(roomsMap);
+  }, [visits]);
 
   const isClosed = shiftSummary?.status === ShiftStatus.LOCKED;
 
   return (
-    <div className="space-y-6 relative">
-        {/* CLOSE SHIFT MODAL */}
-        {showCloseModal && shiftSummary && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
-                <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
-                    <div className={`p-4 border-b flex justify-between items-center ${isClosed ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}`}>
-                        <h3 className={`font-bold text-lg ${isClosed ? 'text-amber-800' : 'text-blue-800'}`}>
-                            {isClosed ? 'Quản lý Ca trực (Đã chốt)' : 'Xác nhận Chốt ca'}
-                        </h3>
-                        <button onClick={() => setShowCloseModal(false)} className="text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark text-xl"></i></button>
-                    </div>
-                    
-                    <div className="p-6 space-y-6">
-                        {/* Summary Stats */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                <div className="text-xs text-slate-500 uppercase font-bold">Tổng liều</div>
-                                <div className="text-2xl font-bold text-slate-800">{shiftSummary.stats.total}</div>
-                            </div>
-                            <div className="bg-green-50 p-3 rounded-lg text-center border border-green-100">
-                                <div className="text-xs text-green-600 uppercase font-bold">Đã xong</div>
-                                <div className="text-2xl font-bold text-green-700">{shiftSummary.stats.completed}</div>
-                            </div>
-                        </div>
-
-                        {!isClosed ? (
-                            // CHECKLIST FOR CLOSING
-                            <div className="space-y-3">
-                                <h4 className="font-bold text-sm text-slate-700 uppercase">Danh sách kiểm tra (Checklist)</h4>
-                                <div className="space-y-2">
-                                    <div className={`flex items-center justify-between p-3 rounded-lg border ${shiftSummary.stats.pending === 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                        <div className="flex items-center gap-3">
-                                            {shiftSummary.stats.pending === 0 
-                                                ? <i className="fa-solid fa-circle-check text-green-500 text-lg"></i> 
-                                                : <i className="fa-solid fa-circle-xmark text-red-500 text-lg"></i>}
-                                            <span className="text-sm font-medium text-slate-700">Xử lý hết liều (Scheduled/Prepared)</span>
-                                        </div>
-                                        {shiftSummary.stats.pending > 0 && <span className="font-bold text-red-600">{shiftSummary.stats.pending}</span>}
-                                    </div>
-
-                                    <div className={`flex items-center justify-between p-3 rounded-lg border ${shiftSummary.stats.returnPending === 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                        <div className="flex items-center gap-3">
-                                            {shiftSummary.stats.returnPending === 0 
-                                                ? <i className="fa-solid fa-circle-check text-green-500 text-lg"></i> 
-                                                : <i className="fa-solid fa-circle-xmark text-red-500 text-lg"></i>}
-                                            <span className="text-sm font-medium text-slate-700">Hoàn trả kho (Return Pending)</span>
-                                        </div>
-                                        {shiftSummary.stats.returnPending > 0 && <span className="font-bold text-red-600">{shiftSummary.stats.returnPending}</span>}
-                                    </div>
-                                </div>
-                                <p className="text-xs text-slate-500 italic mt-2 text-center">
-                                    Lưu ý: Sau khi chốt, dữ liệu sẽ bị khóa và gửi về HIS.
-                                </p>
-                            </div>
-                        ) : (
-                            // REOPEN FORM
-                            <div className="space-y-3 animate-fade-in">
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 items-start">
-                                    <i className="fa-solid fa-lock text-amber-600 mt-1"></i>
-                                    <div className="text-sm text-amber-800">
-                                        Ca trực đang bị KHÓA. Để chỉnh sửa dữ liệu, bạn cần mở lại ca và ghi rõ lý do (Audit Log).
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-1">Lý do mở lại <span className="text-red-500">*</span></label>
-                                    <textarea 
-                                        className="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500/20 outline-none"
-                                        rows={2}
-                                        placeholder="VD: Nhập bổ sung y lệnh cấp cứu..."
-                                        value={reopenReason}
-                                        onChange={e => setReopenReason(e.target.value)}
-                                    ></textarea>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-                        <button onClick={() => setShowCloseModal(false)} className="px-4 py-2 border border-slate-300 bg-white rounded-lg font-medium text-slate-700 hover:bg-slate-100">Đóng</button>
-                        
-                        {!isClosed ? (
-                            <button 
-                                onClick={() => closeShiftMutation.mutate()}
-                                disabled={shiftSummary.stats.pending > 0 || shiftSummary.stats.returnPending > 0 || closeShiftMutation.isPending}
-                                className="px-4 py-2 bg-primary text-white rounded-lg font-bold shadow hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                {closeShiftMutation.isPending ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-lock"></i>}
-                                Xác nhận chốt ca
-                            </button>
-                        ) : (
-                            <button 
-                                onClick={() => reopenShiftMutation.mutate()}
-                                disabled={!reopenReason || reopenShiftMutation.isPending}
-                                className="px-4 py-2 bg-amber-600 text-white rounded-lg font-bold shadow hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                {reopenShiftMutation.isPending ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-unlock"></i>}
-                                Mở lại ca
-                            </button>
-                        )}
+    <div className="space-y-6 pb-24 max-w-[1300px] mx-auto">
+        {/* Dashboard Header */}
+        <div className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex items-center gap-5">
+                <div className="w-16 h-16 bg-primary text-white rounded-[24px] flex items-center justify-center text-3xl shadow-xl shadow-primary/20 transform -rotate-2">
+                    <i className="fa-solid fa-pills"></i>
+                </div>
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900 uppercase leading-none mb-1 tracking-tighter">
+                        Thực hiện dùng thuốc
+                        {isClosed && <span className="ml-3 bg-red-600 text-white text-[8px] px-2 py-1 rounded-full uppercase font-black align-middle tracking-widest shadow-md animate-pulse"><i className="fa-solid fa-lock mr-1"></i>Đã chốt</span>}
+                    </h1>
+                    <div className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5 font-bold bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-hospital"></i> {deptCode === 'NOI1' ? 'Khoa Nội Tổng Hợp' : deptCode}</span>
+                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                        <span className="flex items-center gap-1.5"><i className="fa-solid fa-shield-halved"></i> Giám sát 5 đúng</span>
                     </div>
                 </div>
             </div>
-        )}
-
-        {/* Top Bar */}
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-            <div>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    Thực hiện dùng thuốc (MAR)
-                    {isClosed && <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded border border-red-200 uppercase font-bold"><i className="fa-solid fa-lock mr-1"></i>Đã chốt</span>}
-                </h1>
-                <p className="text-slate-500 text-sm">Quản lý cấp phát thuốc tại giường</p>
-            </div>
             
-            <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
-                {/* DEPT FILTER */}
-                <select
-                    value={deptCode}
-                    onChange={(e) => setDeptCode(e.target.value)}
-                    className="px-3 py-2 border rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary/20 shadow-sm outline-none text-slate-700 font-medium"
-                >
-                    <option value="">Tất cả khoa</option>
-                    <option value="NOI1">Nội 1</option>
-                    <option value="NGOAI">Ngoại</option>
-                    <option value="CAPCUU">Cấp cứu</option>
-                    <option value="TRUYENNHIEM">Truyền nhiễm</option>
-                </select>
-
-                {/* DATE FILTER */}
-                <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-300 shadow-sm">
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100 shadow-inner">
+                    <i className="fa-solid fa-calendar-check text-primary text-sm"></i>
                     <input 
                         type="date" 
-                        value={fromDate}
-                        onChange={e => setFromDate(e.target.value)}
-                        className="text-sm border-none focus:ring-0 text-slate-700 bg-transparent px-2 outline-none"
-                    />
-                    <span className="text-slate-400 text-xs font-bold px-1"><i className="fa-solid fa-arrow-right"></i></span>
-                    <input 
-                        type="date" 
-                        value={toDate}
-                        onChange={e => setToDate(e.target.value)}
-                        className="text-sm border-none focus:ring-0 text-slate-700 bg-transparent px-2 outline-none"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                        className="text-xs font-black border-none focus:ring-0 text-slate-800 bg-transparent outline-none cursor-pointer"
                     />
                 </div>
 
                 <div className="flex gap-2">
                     <button 
                         onClick={() => setShowCloseModal(true)}
-                        className={`px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition whitespace-nowrap ${isClosed ? 'bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200' : 'bg-primary text-white hover:bg-sky-600'}`}
+                        className={`px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg flex items-center gap-2 transition-all active:scale-95 whitespace-nowrap ${isClosed ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-primary text-white hover:bg-sky-600 shadow-primary/20'}`}
                     >
-                        {isClosed ? <><i className="fa-solid fa-lock"></i> Đã chốt ca</> : <><i className="fa-solid fa-check-double"></i> Chốt ca trực</>}
+                        {isClosed ? <><i className="fa-solid fa-lock-open"></i> Mở ca trực</> : <><i className="fa-solid fa-check-double"></i> Chốt ca trực</>}
                     </button>
-                    <Link to="/medication/ward-stock" className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-50 hover:text-primary transition flex items-center gap-2 whitespace-nowrap">
-                        <i className="fa-solid fa-boxes-stacked"></i> Tủ trực
+                    <Link to="/medication/ward-stock" className="bg-white border border-slate-200 text-slate-500 px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-sm hover:bg-slate-50 hover:text-primary transition flex items-center gap-2">
+                        <i className="fa-solid fa-box-archive"></i> Tủ trực
                     </Link>
                 </div>
             </div>
         </div>
 
-        {/* Shift Filter */}
-        <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex overflow-x-auto scrollbar-hide">
-            {[ShiftType.MORNING, ShiftType.NOON, ShiftType.AFTERNOON, ShiftType.NIGHT].map(shift => (
+        {/* Shift Selection Bar - ULTRA COMPACT VERSION */}
+        <div className="bg-slate-200/30 p-1 rounded-2xl flex gap-1 shadow-inner max-w-2xl mx-auto">
+            {[
+                { id: ShiftType.MORNING, label: 'Sáng', range: '06-12h', icon: 'fa-sun' },
+                { id: ShiftType.NOON, label: 'Trưa', range: '12-14h', icon: 'fa-cloud-sun' },
+                { id: ShiftType.AFTERNOON, label: 'Chiều', range: '14-18h', icon: 'fa-cloud' },
+                { id: ShiftType.NIGHT, label: 'Tối/Đêm', range: '18-06h', icon: 'fa-moon' }
+            ].map(s => (
                 <button
-                    key={shift}
-                    onClick={() => setActiveShift(shift)}
-                    className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition whitespace-nowrap flex flex-col items-center gap-1 ${activeShift === shift ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                    key={s.id}
+                    onClick={() => setActiveShift(s.id)}
+                    className={`flex-1 py-1.5 rounded-xl transition-all flex flex-col items-center justify-center group relative overflow-hidden ${activeShift === s.id ? 'bg-white text-primary shadow-sm scale-[1.02]' : 'text-slate-400 hover:bg-white/40'}`}
                 >
-                    <span>{getShiftLabel(shift)}</span>
-                    {activeShift === shift && <div className="w-1.5 h-1.5 bg-white rounded-full mt-1"></div>}
+                    <div className="flex items-center gap-1.5">
+                        <i className={`fa-solid ${s.icon} text-[9px] ${activeShift === s.id ? 'text-primary' : 'text-slate-300'}`}></i>
+                        <span className="text-[9px] font-black uppercase tracking-wider">{s.label}</span>
+                    </div>
+                    <span className="text-[7px] font-bold opacity-30 leading-none mt-0.5">{s.range}</span>
+                    {activeShift === s.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>}
                 </button>
             ))}
         </div>
 
-        {isClosed && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-fade-in">
-                <i className="fa-solid fa-lock text-xl"></i>
-                <div>
-                    <div className="font-bold">Ca trực này đã bị khóa</div>
-                    <div className="text-xs">Dữ liệu đã được đồng bộ. Bạn chỉ có thể xem, không thể chỉnh sửa trạng thái dùng thuốc.</div>
-                </div>
-            </div>
-        )}
-
+        {/* Ward Map: Room -> Bed Layout */}
         {isLoading ? (
-            <div className="text-center py-10"><i className="fa-solid fa-circle-notch fa-spin text-3xl text-primary"></i></div>
+            <div className="flex justify-center py-40"><i className="fa-solid fa-circle-notch fa-spin text-5xl text-primary opacity-20"></i></div>
         ) : (
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${isClosed ? 'opacity-75 grayscale-[0.3] pointer-events-none' : ''}`}>
-                {patients?.map((p: any) => {
-                    const stats = getPatientShiftStats(p);
-                    // For demo purpose, randomize "pending for this shift" based on total pending to simulate reality
-                    const pendingForShift = activeShift === ShiftType.MORNING ? stats.pending : Math.round(stats.pending / 2);
-
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                {wardLayout.map((room) => {
+                    const occupiedInRoom = room.beds.filter(b => b.visit).length;
+                    const dosesRoom = room.beds.reduce((acc, b) => acc + (b.visit?.marSummary?.total || 0), 0);
+                    
                     return (
-                        <Link key={p.id} to={`/medication/${p.id}?shift=${activeShift}`} className={`block group ${isClosed ? 'pointer-events-auto' : ''}`}>
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition p-4 relative overflow-hidden h-full flex flex-col">
-                                <div className="flex gap-3 mb-4">
-                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg border border-blue-100">
-                                        {p.patientName.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900 group-hover:text-primary transition">{p.patientName}</h3>
-                                        <div className="text-xs text-slate-500">{p.patientCode} • {p.patientGender}</div>
-                                        <div className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded w-fit mt-1">{p.deptCode}</div>
+                        <section key={room.room} className="space-y-4">
+                            {/* Room Header */}
+                            <div className="flex items-center gap-4 px-4">
+                                <div className="w-12 h-12 bg-slate-900 text-white rounded-[18px] flex items-center justify-center font-black text-xl shadow-lg border-2 border-white transform rotate-3">
+                                    {room.room.replace(/\D/g, '')}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-black text-xl text-slate-800 uppercase tracking-tight">Phòng {room.room}</h3>
+                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                                        <span>{occupiedInRoom}/{room.beds.length} Bệnh nhân</span>
+                                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                        <span className="text-primary">{dosesRoom} Liều thuốc hôm nay</span>
                                     </div>
                                 </div>
-                                
-                                {/* MAR Summary Stats for this Patient */}
-                                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 mt-auto">
-                                    <div className="text-center">
-                                        <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Chờ dùng</div>
-                                        <div className={`font-bold text-lg ${pendingForShift > 0 ? 'text-primary' : 'text-slate-300'}`}>
-                                            {pendingForShift}
-                                        </div>
-                                    </div>
-                                    <div className="text-center border-l border-slate-100">
-                                        <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Quên/Trễ</div>
-                                        <div className={`font-bold text-lg ${stats.missed > 0 ? 'text-red-500' : 'text-slate-300'}`}>
-                                            {stats.missed}
-                                        </div>
-                                    </div>
-                                    <div className="text-center border-l border-slate-100">
-                                        <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Chờ trả</div>
-                                        <div className={`font-bold text-lg ${stats.returnPending > 0 ? 'text-amber-500' : 'text-slate-300'}`}>
-                                            {stats.returnPending}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {pendingForShift > 0 && (
-                                    <div className="mt-3 bg-blue-50 text-blue-700 text-xs py-2 px-3 rounded-lg text-center font-bold border border-blue-100 flex items-center justify-center gap-2">
-                                        <i className="fa-regular fa-clock"></i> Có thuốc cần dùng
-                                    </div>
-                                )}
+                                <div className="h-px flex-1 bg-slate-100"></div>
                             </div>
-                        </Link>
+
+                            {/* Bed Grid: 2 per row */}
+                            <div className="grid grid-cols-2 gap-6">
+                                {room.beds.map((bed, idx) => (
+                                    <MedicationBedCard 
+                                        key={`${room.room}-${bed.code}-${idx}`}
+                                        bedCode={bed.code}
+                                        visit={bed.visit}
+                                        activeShift={activeShift}
+                                        isClosed={isClosed}
+                                    />
+                                ))}
+                            </div>
+                        </section>
                     );
                 })}
-                {patients?.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">
-                        <i className="fa-solid fa-calendar-xmark text-4xl mb-3 text-slate-200"></i>
-                        <p>Không có lịch dùng thuốc cho khoa này trong khoảng thời gian này.</p>
-                    </div>
-                )}
             </div>
         )}
+
+        {/* Legend */}
+        <div className="bg-white/90 backdrop-blur-xl p-4 rounded-[32px] shadow-[0_15px_40px_rgba(0,0,0,0.08)] border border-slate-100 flex flex-wrap items-center justify-center gap-10 sticky bottom-6 z-40 max-w-fit mx-auto border-b-4 border-b-primary/10">
+            <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-primary/20">#</div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Đã hoàn tất</span>
+            </div>
+            <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-xl bg-amber-400 flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-amber-200">#</div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Đang chờ dùng</span>
+            </div>
+            <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-xl bg-purple-600 flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-purple-200 animate-pulse">#</div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Phải trả kho</span>
+            </div>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded-md bg-white border-2 border-dashed border-slate-300"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Giường trống</span>
+            </div>
+        </div>
     </div>
   );
 };

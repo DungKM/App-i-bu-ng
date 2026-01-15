@@ -8,7 +8,7 @@ import { MedVisitStatus, MedGroupStatus } from '../types';
 export const MedicationDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'VISIT' | 'GROUP' | 'ITEM'>('GROUP');
   const [keyword, setKeyword] = useState('');
-  const [deptCode, setDeptCode] = useState('');
+  const deptCode = 'NOI1'; // Cố định theo tài khoản
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ['med-dashboard', deptCode, keyword],
@@ -29,14 +29,9 @@ export const MedicationDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">Giám sát cấp phát</h1>
-                <p className="text-slate-500 text-sm">Tình trạng dược toàn khoa</p>
+                <p className="text-slate-500 text-sm">Tình trạng dược: <span className="font-bold text-primary">{deptCode === 'NOI1' ? 'Khoa Nội Tổng Hợp' : deptCode}</span></p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                <select value={deptCode} onChange={e => setDeptCode(e.target.value)} className="px-3 py-2 border rounded-lg bg-white text-sm">
-                    <option value="">Tất cả khoa</option>
-                    <option value="NOI1">Nội 1</option>
-                    <option value="NGOAI">Ngoại</option>
-                </select>
                 <div className="relative">
                     <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                     <input type="text" placeholder="Tìm BN..." className="pl-10 pr-4 py-2 rounded-lg border w-full sm:w-64" value={keyword} onChange={e => setKeyword(e.target.value)} />
@@ -50,25 +45,31 @@ export const MedicationDashboard: React.FC = () => {
                     <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
                         <tr>
                             <th className="px-4 py-3">Bệnh nhân</th>
-                            <th className="px-4 py-3">Khoa</th>
+                            <th className="px-4 py-3">Phòng - Giường</th>
                             <th className="px-4 py-3">Ngày kê đơn</th>
                             <th className="px-4 py-3 text-right">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {stats?.pendingGroups.map((g: any) => (
-                            <tr key={g.id} className="hover:bg-slate-50 transition">
-                                <td className="px-4 py-3">
-                                    <div className="font-bold text-slate-900">{g.patientName}</div>
-                                    <div className="text-xs text-slate-500">{g.patientCode} • {g.patientGender}</div>
-                                </td>
-                                <td className="px-4 py-3">{g.deptCode}</td>
-                                <td className="px-4 py-3">{new Date(g.prescriptionDate).toLocaleDateString('vi-VN')}</td>
-                                <td className="px-4 py-3 text-right">
-                                    <Link to={`/medication/${g.visitId}`} className="text-primary hover:underline font-bold">Phát thuốc</Link>
-                                </td>
-                            </tr>
-                        ))}
+                        {isLoading ? (
+                            <tr><td colSpan={4} className="text-center py-10"><i className="fa-solid fa-circle-notch fa-spin text-primary"></i></td></tr>
+                        ) : stats?.pendingGroups.length === 0 ? (
+                            <tr><td colSpan={4} className="text-center py-10 text-slate-400">Không có dữ liệu chờ cấp phát.</td></tr>
+                        ) : (
+                            stats?.pendingGroups.map((g: any) => (
+                                <tr key={g.id} className="hover:bg-slate-50 transition">
+                                    <td className="px-4 py-3">
+                                        <div className="font-bold text-slate-900">{g.patientName}</div>
+                                        <div className="text-xs text-slate-500">{g.patientCode} • {g.patientGender}</div>
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-slate-600">{g.room || '--'} - {g.bed || '--'}</td>
+                                    <td className="px-4 py-3">{new Date(g.prescriptionDate).toLocaleDateString('vi-VN')}</td>
+                                    <td className="px-4 py-3 text-right">
+                                        <Link to={`/medication/${g.visitId}`} className="text-primary hover:underline font-bold">Phát thuốc</Link>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>

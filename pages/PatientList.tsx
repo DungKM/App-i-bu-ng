@@ -5,49 +5,53 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { Patient, PatientStatus } from '../types';
 
-// --- Sub-components for Ward Map (SIMPLIFIED TO 3 STATES) ---
+// --- Sub-components for Ward Map ---
 
 const Legend: React.FC = () => (
-  <div className="flex flex-wrap items-center gap-4 text-[10px] sm:text-xs font-medium text-slate-500 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-    <div className="flex items-center gap-1.5">
-      <div className="w-3 h-3 rounded bg-white border-2 border-dashed border-slate-300"></div>
-      <span>Giường trống</span>
+  <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white px-6 py-4 rounded-[32px] border border-slate-100 shadow-sm">
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full bg-white border-2 border-dashed border-slate-300"></div>
+      <span>Trống</span>
     </div>
-    <div className="flex items-center gap-1.5">
-      <div className="w-3 h-3 rounded bg-green-500"></div>
-      <span>Đã dùng thuốc</span>
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_8px_rgba(14,165,233,0.5)]"></div>
+      <span>Đang chờ dùng</span>
     </div>
-    <div className="flex items-center gap-1.5">
-      <div className="w-3 h-3 rounded bg-amber-500"></div>
-      <span>Chưa dùng thuốc</span>
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+      <span>Đã hoàn thành</span>
     </div>
-    <div className="flex items-center gap-1.5">
-      <div className="w-3 h-3 rounded bg-blue-400"></div>
-      <span>Chưa có y lệnh</span>
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+      <span>Cảnh báo / Quá giờ</span>
     </div>
   </div>
 );
 
-const MedicationStatusBadge: React.FC<{ stats?: Patient['medicationToday'] }> = ({ stats }) => {
+const MedicationStatsSmall: React.FC<{ stats?: Patient['medicationToday'] }> = ({ stats }) => {
   if (!stats || stats.total === 0) {
     return (
-      <div className="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg text-[10px] font-black border border-blue-100 flex items-center gap-1">
-        <i className="fa-solid fa-minus-circle"></i> CHƯA CÓ Y LỆNH
+      <div className="bg-slate-50 text-slate-400 px-3 py-1.5 rounded-xl text-[9px] font-black flex items-center gap-1.5 border border-slate-100 uppercase">
+        <i className="fa-solid fa-minus-circle"></i> Chưa y lệnh
       </div>
     );
   }
 
-  if (stats.done === stats.total) {
+  const isDone = stats.done === stats.total;
+  const isOverdue = stats.overdue > 0;
+
+  if (isDone) {
     return (
-      <div className="bg-green-50 text-green-600 px-2 py-1 rounded-lg text-[10px] font-black border border-green-200 flex items-center gap-1">
-        <i className="fa-solid fa-check-circle"></i> ĐÃ DÙNG ({stats.done}/{stats.total})
+      <div className="bg-green-50 text-green-600 px-3 py-1.5 rounded-xl text-[9px] font-black flex items-center gap-1.5 border border-green-100 uppercase">
+        <i className="fa-solid fa-check-circle"></i> Hoàn thành ({stats.done}/{stats.total})
       </div>
     );
   }
 
   return (
-    <div className="bg-amber-50 text-amber-600 px-2 py-1 rounded-lg text-[10px] font-black border border-amber-200 flex items-center gap-1">
-      <i className="fa-solid fa-clock"></i> CHƯA DÙNG ({stats.done}/{stats.total})
+    <div className={`${isOverdue ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-primary/5 text-primary border-primary/10'} px-3 py-1.5 rounded-xl text-[9px] font-black flex items-center gap-1.5 border uppercase`}>
+      <i className={`fa-solid ${isOverdue ? 'fa-triangle-exclamation' : 'fa-clock'}`}></i>
+      {isOverdue ? 'Quá giờ' : 'Đang chờ'} ({stats.done}/{stats.total})
     </div>
   );
 };
@@ -62,61 +66,56 @@ const BedCard: React.FC<BedCardProps> = ({ bedCode, patient, onClick }) => {
   const isOccupied = !!patient;
   
   const getStatusClasses = () => {
-      if (!isOccupied) return 'bg-white border-dashed border-slate-200 opacity-50 cursor-default';
+      if (!isOccupied) return 'bg-white border-dashed border-slate-200 opacity-40 cursor-default';
       
       const stats = patient.medicationToday;
-      if (!stats || stats.total === 0) return 'bg-blue-50 border-blue-200';
+      if (!stats || stats.total === 0) return 'bg-white border-slate-200 shadow-sm';
+      if (stats.overdue > 0) return 'bg-red-50 border-red-300 ring-4 ring-red-100';
       if (stats.done === stats.total) return 'bg-green-50 border-green-300';
-      return 'bg-amber-50 border-amber-300 ring-2 ring-amber-100';
+      return 'bg-blue-50 border-primary/30 ring-2 ring-primary/5';
   };
 
   return (
     <div 
       onClick={isOccupied ? onClick : undefined}
-      className={`relative group h-36 sm:h-40 rounded-2xl border-2 transition-all duration-300 p-4 flex flex-col justify-between cursor-pointer shadow-sm hover:shadow-md
+      className={`relative h-40 rounded-[28px] border-2 transition-all duration-300 p-5 flex flex-col justify-between cursor-pointer hover:shadow-xl hover:-translate-y-1
         ${getStatusClasses()}
       `}
     >
       <div className="flex justify-between items-start">
-        <div className="flex flex-col gap-1">
-            <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg w-fit shadow-sm ${isOccupied ? 'bg-white text-slate-700' : 'bg-slate-100 text-slate-400'}`}>
-            {bedCode}
-            </span>
-            {patient?.isSpecialCare && (
-                <div className="text-red-600 text-[10px] font-black flex items-center gap-1">
-                    <i className="fa-solid fa-triangle-exclamation animate-bounce"></i> THEO DÕI ĐB
-                </div>
-            )}
-        </div>
+        <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl shadow-sm ${isOccupied ? 'bg-white text-primary border border-primary/10' : 'bg-slate-50 text-slate-300'}`}>
+          {bedCode}
+        </span>
         
         {isOccupied && (
-          <div className="flex items-center gap-2">
-              <i className={`fa-solid fa-bed text-lg ${patient.medicationToday?.status === 'PENDING' ? 'text-amber-500' : 'text-slate-400'}`}></i>
+          <div className="flex items-center gap-2 opacity-10">
+              <i className="fa-solid fa-bed text-2xl"></i>
           </div>
         )}
       </div>
 
       {isOccupied ? (
         <div className="min-w-0 flex-1 flex flex-col justify-center my-1">
-          <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight truncate uppercase">
+          <h3 className="text-base font-black text-slate-900 leading-tight truncate uppercase tracking-tight">
             {patient.name}
           </h3>
-          <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
-             <span className={`px-1.5 py-0.5 rounded ${patient.gender === 'Nam' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>{patient.gender}</span>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 mt-0.5">
+             <span className="text-primary font-mono tracking-tighter">{patient.code}</span>
              <span>•</span>
-             <span className="font-mono">{patient.code}</span>
+             <span className="uppercase">{patient.gender}</span>
+             <span>•</span>
+             <span>{new Date().getFullYear() - parseInt(patient.dob.split('-')[0])} tuổi</span>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center flex-1">
-          <i className="fa-solid fa-plus-circle text-slate-200 text-2xl mb-1"></i>
-          <span className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Trống</span>
+        <div className="flex flex-col items-center justify-center flex-1 opacity-5">
+          <i className="fa-solid fa-plus-circle text-4xl"></i>
         </div>
       )}
 
       {isOccupied && (
-          <div className="pt-2 border-t border-slate-200/50">
-               <MedicationStatusBadge stats={patient.medicationToday} />
+          <div className="pt-2 border-t border-slate-100">
+               <MedicationStatsSmall stats={patient.medicationToday} />
           </div>
       )}
     </div>
@@ -181,7 +180,7 @@ export const PatientList: React.FC = () => {
     }));
   }, [wardLayout, searchTerm, medFilter]);
 
-  const stats = useMemo(() => {
+  const statsSummary = useMemo(() => {
     if (!patients) return { total: 0, occupied: 0, pendingMed: 0, noOrder: 0 };
     const pendingMed = patients.filter(p => p.medicationToday && p.medicationToday.total > 0 && p.medicationToday.done < p.medicationToday.total).length;
     const noOrder = patients.filter(p => !p.medicationToday || p.medicationToday.total === 0).length;
@@ -189,53 +188,54 @@ export const PatientList: React.FC = () => {
     return { total: totalBeds, occupied: patients.length, pendingMed, noOrder };
   }, [patients, wardLayout]);
 
-  if (isLoading) return <div className="flex justify-center py-20"><i className="fa-solid fa-circle-notch fa-spin text-3xl text-primary"></i></div>;
+  if (isLoading) return <div className="flex justify-center py-40"><i className="fa-solid fa-circle-notch fa-spin text-6xl text-primary opacity-20"></i></div>;
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header & Stats Dashboard */}
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-3xl">
+    <div className="space-y-8 pb-32 max-w-[1400px] mx-auto">
+      {/* Dashboard Header */}
+      <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+        <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary text-white rounded-[32px] flex items-center justify-center text-4xl shadow-xl shadow-primary/20 transform -rotate-3 transition hover:rotate-0">
               <i className="fa-solid fa-hospital-user"></i>
             </div>
             <div>
-                <h1 className="text-2xl font-black text-slate-900 uppercase">Sơ đồ điều trị</h1>
-                <p className="text-slate-500 font-medium text-sm">Khoa Nội Tổng Hợp - Thời gian thực</p>
+                <h1 className="text-4xl font-black text-slate-900 uppercase leading-none mb-2 tracking-tighter">Sơ đồ điều trị</h1>
+                <div className="flex items-center gap-4 text-slate-400 text-xs font-black uppercase tracking-[0.2em]">
+                    <span className="flex items-center gap-2 bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-circle text-[6px] animate-pulse"></i> Trực tuyến</span>
+                    <span className="flex items-center gap-2"><i className="fa-solid fa-calendar"></i> {new Date().toLocaleDateString('vi-VN')}</span>
+                </div>
             </div>
-          </div>
+        </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center">
-               <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Tổng giường</div>
-               <div className="text-2xl font-black text-slate-800">{stats.total}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full lg:w-auto">
+            <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex flex-col items-center shadow-inner">
+               <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng giường</div>
+               <div className="text-2xl font-black text-slate-800">{statsSummary.total}</div>
             </div>
-            <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex flex-col items-center">
-               <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1">Chưa xong</div>
-               <div className="text-2xl font-black text-amber-700">{stats.pendingMed}</div>
+            <div className="bg-amber-50 p-5 rounded-[24px] border border-amber-100 flex flex-col items-center shadow-inner">
+               <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">Đang chờ</div>
+               <div className="text-2xl font-black text-amber-700">{statsSummary.pendingMed}</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-2xl border border-green-100 flex flex-col items-center">
-               <div className="text-[10px] font-black text-green-500 uppercase tracking-wider mb-1">Đã xong</div>
-               <div className="text-2xl font-black text-green-700">{stats.occupied - stats.pendingMed - stats.noOrder}</div>
+            <div className="bg-green-50 p-5 rounded-[24px] border border-green-100 flex flex-col items-center shadow-inner">
+               <div className="text-[9px] font-black text-green-500 uppercase tracking-widest mb-1">Đã xong</div>
+               <div className="text-2xl font-black text-green-700">{statsSummary.occupied - statsSummary.pendingMed - statsSummary.noOrder}</div>
             </div>
-            <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex flex-col items-center">
-               <div className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1">Không y lệnh</div>
-               <div className="text-2xl font-black text-blue-700">{stats.noOrder}</div>
+            <div className="bg-blue-50 p-5 rounded-[24px] border border-blue-100 flex flex-col items-center shadow-inner">
+               <div className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Kế hoạch</div>
+               <div className="text-2xl font-black text-blue-700">{statsSummary.occupied}</div>
             </div>
-          </div>
         </div>
       </div>
 
       {/* Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-80">
+            <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"></i>
             <input 
               type="text" 
-              placeholder="Tên BN, mã phiếu..." 
-              className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-primary/10 outline-none font-medium text-sm transition-all"
+              placeholder="Tìm tên bệnh nhân, mã số..." 
+              className="w-full pl-12 pr-6 py-4 rounded-3xl border-2 border-slate-50 bg-slate-50 focus:bg-white focus:border-primary/30 outline-none font-bold text-sm transition-all shadow-inner"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -243,39 +243,43 @@ export const PatientList: React.FC = () => {
           <select 
             value={medFilter}
             onChange={(e) => setMedFilter(e.target.value as any)}
-            className="px-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-bold outline-none focus:ring-4 focus:ring-primary/10 transition-all text-slate-700"
+            className="px-6 py-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-sm font-black outline-none focus:bg-white focus:border-primary/30 transition-all text-slate-700 shadow-inner"
           >
-            <option value="ALL">Tất cả thuốc</option>
-            <option value="DONE">🟢 Đã dùng</option>
-            <option value="PENDING">🟡 Chưa dùng</option>
-            <option value="NONE">🔵 Chưa y lệnh</option>
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="DONE">🟢 Đã hoàn thành</option>
+            <option value="PENDING">🟡 Đang chờ dùng</option>
+            <option value="NONE">⚪ Chưa có y lệnh</option>
           </select>
         </div>
         
         <Legend />
       </div>
 
-      {/* Ward Map Layout: 2 rooms per row on medium+ screens */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
+      {/* Ward Map Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
         {filteredWard.map((room) => {
           const occupiedInRoom = room.beds.filter(b => b.patient).length;
           if (occupiedInRoom === 0 && searchTerm) return null;
 
           return (
-            <section key={room.room} className="space-y-4">
-              <div className="flex items-center gap-3 px-2">
-                <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black">
+            <section key={room.room} className="space-y-6">
+              <div className="flex items-center gap-4 px-4">
+                <div className="w-14 h-14 bg-slate-900 text-white rounded-[20px] flex items-center justify-center font-black text-xl shadow-lg border-4 border-white transform rotate-3">
                   {room.room.replace(/\D/g, '')}
                 </div>
-                <div>
-                    <h3 className="font-black text-xl text-slate-800 uppercase">Phòng {room.room}</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{occupiedInRoom}/{room.beds.length} Bệnh nhân</p>
+                <div className="flex-1">
+                    <h3 className="font-black text-2xl text-slate-800 uppercase tracking-tighter">Phòng {room.room}</h3>
+                    <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                        <span>{occupiedInRoom}/{room.beds.length} Bệnh nhân</span>
+                        <span className="w-1.5 h-1.5 bg-slate-200 rounded-full"></span>
+                        <span className="text-primary">Khoa Nội Tổng Hợp</span>
+                    </div>
                 </div>
-                <div className="h-px flex-1 bg-slate-200 ml-4"></div>
+                <div className="h-px flex-1 bg-slate-100"></div>
               </div>
 
               {/* Bed Grid: 2 beds per row */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 {room.beds.map((bed, idx) => (
                   <BedCard 
                     key={`${room.room}-${bed.code}-${idx}`}

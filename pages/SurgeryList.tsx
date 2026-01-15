@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -18,7 +19,7 @@ const statusLabels = {
 
 export const SurgeryList: React.FC = () => {
   const [keyword, setKeyword] = useState('');
-  const [deptCode, setDeptCode] = useState('CDHA'); // Default filter mock
+  const deptCode = 'CDHA'; // Cố định theo khoa của tài khoản (VD: Chẩn đoán hình ảnh)
 
   const { data: groups, isLoading } = useQuery({
     queryKey: ['surgery-groups', deptCode, keyword],
@@ -30,20 +31,10 @@ export const SurgeryList: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
            <h1 className="text-2xl font-bold text-slate-900">Danh sách DVKT / Cận lâm sàng</h1>
-           <p className="text-slate-500 text-sm">Quản lý phiếu chỉ định và thực hiện kỹ thuật</p>
+           <p className="text-slate-500 text-sm">Khoa thực hiện: <span className="font-bold text-primary">Chẩn đoán hình ảnh</span></p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <select 
-                value={deptCode} 
-                onChange={e => setDeptCode(e.target.value)}
-                className="px-3 py-2 border rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary/20 w-full sm:w-auto"
-            >
-                <option value="">Tất cả khoa</option>
-                <option value="CDHA">Chẩn đoán hình ảnh</option>
-                <option value="XN">Xét nghiệm</option>
-                <option value="TDCN">Thăm dò chức năng</option>
-            </select>
             <div className="relative w-full sm:w-auto">
                 <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input 
@@ -81,19 +72,15 @@ export const SurgeryList: React.FC = () => {
 
                   <div className="space-y-2 text-sm text-slate-600 border-t border-slate-100 pt-3">
                       <div className="flex justify-between">
-                          <span className="text-slate-400 text-xs">Phòng thực hiện</span>
-                          <span className="font-semibold">{group.fulfillDeptCode}</span>
-                      </div>
-                      <div className="flex justify-between">
                           <span className="text-slate-400 text-xs">Người chỉ định</span>
-                          <span className="truncate max-w-[150px] text-right">{group.indicationPerson}</span>
+                          <span className="truncate max-w-[150px] text-right font-medium">{group.indicationPerson}</span>
                       </div>
                       <div className="flex justify-between">
                           <span className="text-slate-400 text-xs">Thời gian</span>
-                          <span>{new Date(group.indicationDate).toLocaleDateString('vi-VN')}</span>
+                          <span className="font-medium">{new Date(group.indicationDate).toLocaleDateString('vi-VN')}</span>
                       </div>
-                      <div className="bg-slate-50 p-2 rounded text-xs line-clamp-1">
-                          <span className="font-bold mr-1">CD:</span>{group.diagnosis}
+                      <div className="bg-slate-50 p-2 rounded text-xs line-clamp-1 border border-slate-100 italic">
+                          <span className="font-bold mr-1 text-slate-700">CĐ:</span>{group.diagnosis}
                       </div>
                   </div>
                 </div>
