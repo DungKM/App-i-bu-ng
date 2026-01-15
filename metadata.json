@@ -1,0 +1,8 @@
+{
+  "name": " Ứng dụng Đi buồng v2",
+  "description": "Ứng dụng hỗ trợ bác sĩ và điều dưỡng đi buồng, quản lý bệnh nhân, y lệnh và sinh hiệu theo thời gian thực.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
