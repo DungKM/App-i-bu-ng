@@ -1,11 +1,8 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { ShiftType, ShiftStatus, MedVisit, MARStatus } from '../types';
-
-// --- Sub-components for Quantified MAR Ward Map ---
 
 const MiniShiftOverview: React.FC<{ 
   label: string; 
@@ -32,18 +29,10 @@ const MedicationBedCard: React.FC<{
   const navigate = useNavigate();
   const isOccupied = !!visit;
   
-  const shiftStats = useMemo(() => {
-    if (!visit?.marSummary) return null;
-    const s = visit.marSummary;
-    return {
-      [ShiftType.MORNING]: { used: Math.floor(s.total * 0.4), pending: Math.ceil(s.pending * 0.6), returned: 0 },
-      [ShiftType.NOON]: { used: Math.floor(s.total * 0.2), pending: 0, returned: s.returnPending },
-      [ShiftType.AFTERNOON]: { used: Math.floor(s.total * 0.2), pending: Math.floor(s.pending * 0.2), returned: 0 },
-      [ShiftType.NIGHT]: { used: Math.floor(s.total * 0.1), pending: Math.floor(s.pending * 0.2), returned: 0 },
-    };
-  }, [visit]);
-
+  // Dữ liệu shift lấy trực tiếp từ API (đã được tính toán trong api.ts)
+  const shiftStats = visit?.marSummary?.shifts;
   const current = shiftStats ? shiftStats[activeShift] : { used: 0, pending: 0, returned: 0 };
+  
   const hasReturns = current.returned > 0;
   const hasPending = current.pending > 0;
 
@@ -86,7 +75,7 @@ const MedicationBedCard: React.FC<{
         </div>
       )}
 
-      {isOccupied && (
+      {isOccupied && shiftStats && (
         <div className="space-y-1.5 mt-auto pt-2 border-t border-slate-100">
           <div className="grid grid-cols-3 gap-0.5 text-center">
             <div>
@@ -104,10 +93,10 @@ const MedicationBedCard: React.FC<{
           </div>
 
           <div className="flex gap-0.5 bg-slate-100/50 p-0.5 rounded-lg">
-            <MiniShiftOverview label="S" {...shiftStats![ShiftType.MORNING]} isActive={activeShift === ShiftType.MORNING} />
-            <MiniShiftOverview label="T" {...shiftStats![ShiftType.NOON]} isActive={activeShift === ShiftType.NOON} />
-            <MiniShiftOverview label="C" {...shiftStats![ShiftType.AFTERNOON]} isActive={activeShift === ShiftType.AFTERNOON} />
-            <MiniShiftOverview label="Đ" {...shiftStats![ShiftType.NIGHT]} isActive={activeShift === ShiftType.NIGHT} />
+            <MiniShiftOverview label="S" {...shiftStats[ShiftType.MORNING]} isActive={activeShift === ShiftType.MORNING} />
+            <MiniShiftOverview label="T" {...shiftStats[ShiftType.NOON]} isActive={activeShift === ShiftType.NOON} />
+            <MiniShiftOverview label="C" {...shiftStats[ShiftType.AFTERNOON]} isActive={activeShift === ShiftType.AFTERNOON} />
+            <MiniShiftOverview label="Đ" {...shiftStats[ShiftType.NIGHT]} isActive={activeShift === ShiftType.NIGHT} />
           </div>
         </div>
       )}
@@ -118,7 +107,7 @@ const MedicationBedCard: React.FC<{
 export const MedicationList: React.FC = () => {
   const [activeShift, setActiveShift] = useState<ShiftType>(ShiftType.MORNING);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const deptCode = 'NOI1'; // Cố định khoa theo tài khoản
+  const deptCode = 'NOI1';
   const [showCloseModal, setShowCloseModal] = useState(false);
   
   const queryClient = useQueryClient();
@@ -140,17 +129,6 @@ export const MedicationList: React.FC = () => {
       else if (hour >= 14 && hour < 18) setActiveShift(ShiftType.AFTERNOON);
       else setActiveShift(ShiftType.NIGHT);
   }, []);
-
-  const closeShiftMutation = useMutation({
-      mutationFn: () => api.closeShift(activeShift),
-      onSuccess: (res) => {
-          if (res.success) {
-              queryClient.invalidateQueries({ queryKey: ['shift-summary'] });
-              setShowCloseModal(false);
-              alert('Đã chốt ca thành công.');
-          }
-      }
-  });
 
   const wardLayout = useMemo(() => {
     if (!visits) return [];
@@ -190,7 +168,7 @@ export const MedicationList: React.FC = () => {
                         {isClosed && <span className="ml-3 bg-red-600 text-white text-[8px] px-2 py-1 rounded-full uppercase font-black align-middle tracking-widest shadow-md animate-pulse"><i className="fa-solid fa-lock mr-1"></i>Đã chốt</span>}
                     </h1>
                     <div className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5 font-bold bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-hospital"></i> {deptCode === 'NOI1' ? 'Khoa Nội Tổng Hợp' : deptCode}</span>
+                        <span className="flex items-center gap-1.5 font-bold bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-hospital"></i> Khoa Nội Tổng Hợp</span>
                         <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
                         <span className="flex items-center gap-1.5"><i className="fa-solid fa-shield-halved"></i> Giám sát 5 đúng</span>
                     </div>
@@ -222,7 +200,6 @@ export const MedicationList: React.FC = () => {
             </div>
         </div>
 
-        {/* Shift Selection Bar - ULTRA COMPACT VERSION */}
         <div className="bg-slate-200/30 p-1 rounded-2xl flex gap-1 shadow-inner max-w-2xl mx-auto">
             {[
                 { id: ShiftType.MORNING, label: 'Sáng', range: '06-12h', icon: 'fa-sun' },
@@ -245,71 +222,36 @@ export const MedicationList: React.FC = () => {
             ))}
         </div>
 
-        {/* Ward Map: Room -> Bed Layout */}
         {isLoading ? (
             <div className="flex justify-center py-40"><i className="fa-solid fa-circle-notch fa-spin text-5xl text-primary opacity-20"></i></div>
         ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                {wardLayout.map((room) => {
-                    const occupiedInRoom = room.beds.filter(b => b.visit).length;
-                    const dosesRoom = room.beds.reduce((acc, b) => acc + (b.visit?.marSummary?.total || 0), 0);
-                    
-                    return (
-                        <section key={room.room} className="space-y-4">
-                            {/* Room Header */}
-                            <div className="flex items-center gap-4 px-4">
-                                <div className="w-12 h-12 bg-slate-900 text-white rounded-[18px] flex items-center justify-center font-black text-xl shadow-lg border-2 border-white transform rotate-3">
-                                    {room.room.replace(/\D/g, '')}
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-black text-xl text-slate-800 uppercase tracking-tight">Phòng {room.room}</h3>
-                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                                        <span>{occupiedInRoom}/{room.beds.length} Bệnh nhân</span>
-                                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                        <span className="text-primary">{dosesRoom} Liều thuốc hôm nay</span>
-                                    </div>
-                                </div>
-                                <div className="h-px flex-1 bg-slate-100"></div>
+                {wardLayout.map((room) => (
+                    <section key={room.room} className="space-y-4">
+                        <div className="flex items-center gap-4 px-4">
+                            <div className="w-12 h-12 bg-slate-900 text-white rounded-[18px] flex items-center justify-center font-black text-xl shadow-lg border-2 border-white transform rotate-3">
+                                {room.room.replace(/\D/g, '')}
                             </div>
-
-                            {/* Bed Grid: 2 per row */}
-                            <div className="grid grid-cols-2 gap-6">
-                                {room.beds.map((bed, idx) => (
-                                    <MedicationBedCard 
-                                        key={`${room.room}-${bed.code}-${idx}`}
-                                        bedCode={bed.code}
-                                        visit={bed.visit}
-                                        activeShift={activeShift}
-                                        isClosed={isClosed}
-                                    />
-                                ))}
+                            <div className="flex-1">
+                                <h3 className="font-black text-xl text-slate-800 uppercase tracking-tight">Phòng {room.room}</h3>
                             </div>
-                        </section>
-                    );
-                })}
+                            <div className="h-px flex-1 bg-slate-100"></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            {room.beds.map((bed, idx) => (
+                                <MedicationBedCard 
+                                    key={`${room.room}-${bed.code}-${idx}`}
+                                    bedCode={bed.code}
+                                    visit={bed.visit}
+                                    activeShift={activeShift}
+                                    isClosed={isClosed}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                ))}
             </div>
         )}
-
-        {/* Legend */}
-        <div className="bg-white/90 backdrop-blur-xl p-4 rounded-[32px] shadow-[0_15px_40px_rgba(0,0,0,0.08)] border border-slate-100 flex flex-wrap items-center justify-center gap-10 sticky bottom-6 z-40 max-w-fit mx-auto border-b-4 border-b-primary/10">
-            <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-primary/20">#</div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Đã hoàn tất</span>
-            </div>
-            <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-xl bg-amber-400 flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-amber-200">#</div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Đang chờ dùng</span>
-            </div>
-            <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-xl bg-purple-600 flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-purple-200 animate-pulse">#</div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Phải trả kho</span>
-            </div>
-            <div className="h-4 w-px bg-slate-200"></div>
-            <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-md bg-white border-2 border-dashed border-slate-300"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Giường trống</span>
-            </div>
-        </div>
     </div>
   );
 };

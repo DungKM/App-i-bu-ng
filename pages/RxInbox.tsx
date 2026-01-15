@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import { RxChangeType } from '../types';
+import { RxChangeType, RxInboxItem } from '../types';
 
 export const RxInbox: React.FC = () => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -23,7 +23,8 @@ export const RxInbox: React.FC = () => {
       }
   });
 
-  const selectedItem = inboxItems?.find(i => i.patientId === selectedPatientId);
+  /* Fix: Cast inboxItems to RxInboxItem[] */
+  const selectedItem = (inboxItems as RxInboxItem[])?.find(i => i.patientId === selectedPatientId);
 
   // Toggle Acknowledge
   const toggleAck = (changeId: string) => {
@@ -64,20 +65,23 @@ export const RxInbox: React.FC = () => {
                 <h2 className="font-bold text-slate-800">Y lệnh chờ nhận</h2>
                 <div className="flex justify-between items-center mt-1">
                     <p className="text-xs text-slate-500">Từ HIS • Cần xác nhận</p>
-                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{inboxItems?.length || 0}</span>
+                    {/* Fix: Cast inboxItems to RxInboxItem[] */}
+                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{(inboxItems as RxInboxItem[])?.length || 0}</span>
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
                     <div className="p-4 text-center text-slate-400">Đang tải...</div>
                 ) : (
-                    inboxItems?.length === 0 ? (
+                    /* Fix: Cast inboxItems to RxInboxItem[] */
+                    (!inboxItems || (inboxItems as RxInboxItem[]).length === 0) ? (
                         <div className="p-8 text-center text-slate-400 flex flex-col items-center">
                             <i className="fa-solid fa-check-double text-4xl mb-3 text-green-200"></i>
                             <p>Đã nhận hết y lệnh.</p>
                         </div>
                     ) : (
-                        inboxItems?.map(item => (
+                        /* Fix: Cast inboxItems to RxInboxItem[] */
+                        (inboxItems as RxInboxItem[]).map(item => (
                             <div 
                                 key={item.patientId} 
                                 onClick={() => { setSelectedPatientId(item.patientId); setAcks({}); }}

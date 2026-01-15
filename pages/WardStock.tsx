@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import { IssueNoteStatus, HisIssueStatus, StockTransactionType, MARStatus } from '../types';
+import { IssueNoteStatus, HisIssueStatus, StockTransactionType, MARStatus, IssueNote } from '../types';
 
 interface ReceiveInput {
     qty: number;
@@ -88,7 +88,8 @@ export const WardStock: React.FC = () => {
 
   const handleConfirm = () => {
       if(!selectedNote) return;
-      const note = notes?.find(n => n.id === selectedNote);
+      /* Fix: Cast notes to IssueNote[] */
+      const note = (notes as IssueNote[])?.find(n => n.id === selectedNote);
       if(!note) return;
 
       const itemsPayload = note.items.map(item => {
@@ -117,7 +118,8 @@ export const WardStock: React.FC = () => {
       }));
   };
 
-  const currentNote = notes?.find(n => n.id === selectedNote);
+  /* Fix: Cast notes to IssueNote[] */
+  const currentNote = (notes as IssueNote[])?.find(n => n.id === selectedNote);
   const isEditable = currentNote?.status === IssueNoteStatus.SENT && currentNote?.hisStatus !== HisIssueStatus.CANCELED;
 
   const getHisStatusBadge = (status: HisIssueStatus) => {
@@ -267,7 +269,8 @@ export const WardStock: React.FC = () => {
                 className={`px-6 py-3 font-medium text-sm border-b-2 transition whitespace-nowrap ${activeTab === 'RECEIPT' ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`}
             >
                 Nhập thuốc (Issue Notes) 
-                {notes?.some(n => n.status === IssueNoteStatus.SENT && n.hisStatus !== HisIssueStatus.CANCELED) && <span className="ml-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">New</span>}
+                {/* Fix: Cast notes to IssueNote[] */}
+                {(notes as IssueNote[])?.some(n => n.status === IssueNoteStatus.SENT && n.hisStatus !== HisIssueStatus.CANCELED) && <span className="ml-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">New</span>}
             </button>
             <button 
                 onClick={() => setActiveTab('STOCK')}
@@ -280,7 +283,7 @@ export const WardStock: React.FC = () => {
                 className={`px-6 py-3 font-medium text-sm border-b-2 transition whitespace-nowrap flex items-center gap-2 ${activeTab === 'RETURNS' ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`}
             >
                 Thuốc chờ trả
-                {pendingReturns && pendingReturns.length > 0 && <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-bold">{pendingReturns.length}</span>}
+                {pendingReturns && (pendingReturns as any[]).length > 0 && <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-bold">{(pendingReturns as any[]).length}</span>}
             </button>
         </div>
 
@@ -374,7 +377,8 @@ export const WardStock: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {pendingReturns?.map((item: any) => (
+                            {/* Fix: Cast pendingReturns to any[] */}
+                            {(pendingReturns as any[])?.map((item: any) => (
                                 <tr key={item.id} className="hover:bg-slate-50 transition">
                                     <td className="px-4 py-3">
                                         <div className="font-bold text-slate-800">{item.drugName}</div>
@@ -402,7 +406,8 @@ export const WardStock: React.FC = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {pendingReturns?.length === 0 && (
+                            {/* Fix: Cast pendingReturns to any[] */}
+                            {(!pendingReturns || (pendingReturns as any[]).length === 0) && (
                                 <tr><td colSpan={4} className="text-center py-10 text-slate-400">Không có thuốc nào đang chờ trả.</td></tr>
                             )}
                         </tbody>
@@ -440,7 +445,8 @@ export const WardStock: React.FC = () => {
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-fit max-h-[600px] overflow-y-auto">
                         <div className="p-3 bg-slate-50 border-b font-bold text-slate-700 sticky top-0">Phiếu từ Dược</div>
                         <div className="divide-y divide-slate-100">
-                            {notes?.map(note => (
+                            {/* Fix: Cast notes to IssueNote[] */}
+                            {(notes as IssueNote[])?.map(note => (
                                 <div 
                                     key={note.id} 
                                     onClick={() => setSelectedNote(note.id)}
@@ -461,7 +467,8 @@ export const WardStock: React.FC = () => {
                                     <div className="text-xs text-slate-500 mt-1">{note.items.length} khoản mục</div>
                                 </div>
                             ))}
-                            {notes?.length === 0 && <div className="p-4 text-center text-slate-400">Không tìm thấy phiếu.</div>}
+                            {/* Fix: Cast notes to IssueNote[] */}
+                            {(!notes || (notes as IssueNote[]).length === 0) && <div className="p-4 text-center text-slate-400">Không tìm thấy phiếu.</div>}
                         </div>
                     </div>
 

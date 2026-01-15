@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -17,10 +18,11 @@ export const RoundDashboard: React.FC = () => {
     refetchInterval: 30000 // Refresh every 30s
   });
 
-  const shiftInfo = data?.shift;
-  const summary = data?.summary || { total: 0, nurseDone: 0, doctorDone: 0 };
-  const patients = data?.patients || [];
-  const deptStats = data?.deptStats || [];
+  /* Fix: Cast data to any to access properties */
+  const shiftInfo = (data as any)?.shift;
+  const summary = (data as any)?.summary || { total: 0, nurseDone: 0, doctorDone: 0 };
+  const patients = (data as any)?.patients || [];
+  const deptStats = (data as any)?.deptStats || [];
 
   const roundedCount = viewMode === 'NURSE' ? summary.nurseDone : summary.doctorDone;
   const unroundedCount = summary.total - roundedCount;

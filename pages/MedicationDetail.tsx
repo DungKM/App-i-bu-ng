@@ -1,9 +1,9 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import { MARStatus, ShiftType, ReasonCode, MARItem, MedicationDeliveryProof } from '../types';
+import { MARStatus, ShiftType, MARItem, MedicationDeliveryProof, MedVisit, TreatmentStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { MedicationDeliveryModal } from '../components/MedicationDeliveryModal';
 
@@ -14,8 +14,10 @@ export const MedicationDetail: React.FC = () => {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
   
+  // States
   const initialShift = (searchParams.get('shift') as ShiftType) || ShiftType.MORNING;
   const [activeShift, setActiveShift] = useState<ShiftType>(initialShift);
+  const [selectedVisitId, setSelectedVisitId] = useState<string>(visitId!);
   
   const [isVerified, setIsVerified] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -23,309 +25,291 @@ export const MedicationDetail: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [confirmDeliveryItem, setConfirmDeliveryItem] = useState<MARItem | null>(null);
-  const [undoItem, setUndoItem] = useState<MARItem | null>(null);
 
-  const [exceptionModal, setExceptionModal] = useState<{
-      item: any;
-      action: MARStatus.HELD | MARStatus.REFUSED | MARStatus.MISSED | MARStatus.RETURN_PENDING;
-  } | null>(null);
-  const [selectedReason, setSelectedReason] = useState('');
-  const [exceptionNote, setExceptionNote] = useState('');
-  const [isDispensed, setIsDispensed] = useState(false);
+  // Queries
+  // 1. Lấy thông tin cơ bản của visit hiện tại để lấy patientId
+  const { data: currentVisitData } = useQuery({
+      queryKey: ['mar-visit-basic', visitId],
+      queryFn: () => api.getMARPatients({ patientId: undefined }).then(list => list.find(v => v.id === visitId))
+  });
 
-  const { data: marItems } = useQuery({ queryKey: ['mar-detail', visitId], queryFn: () => api.getMARByVisit(visitId!) });
-  const { data: stock } = useQuery({ queryKey: ['ward-stock'], queryFn: api.getWardStock });
-  const { data: reasons } = useQuery({ queryKey: ['mar-reasons'], queryFn: api.getMARReasonCodes });
-  
-  const patientInfo = marItems && marItems.length > 0 ? { 
-      name: 'Phạm Văn Minh',
-      code: 'BN23001', 
-      gender: 'Nam'
-  } : { name: '...', code: '...', gender: '...' };
+  // 2. Lấy danh sách các Lần khám có kê thuốc của bệnh nhân này
+  const { data: medicationEncounters, isLoading: encountersLoading } = useQuery({ 
+    queryKey: ['mar-encounters-with-meds', currentVisitData?.patientId], 
+    queryFn: () => api.getMARPatients({ 
+        patientId: currentVisitData?.patientId, 
+        hasMedication: true 
+    }),
+    enabled: !!currentVisitData?.patientId
+  });
 
-  const currentShiftItems = marItems?.filter((m: any) => m.shift === activeShift) || [];
+  // 3. Lấy dữ liệu MAR cho Lần khám đang chọn (Requirement: Tối ưu chỉ fetch MAR khi click)
+  const { data: marItems, isLoading: itemsLoading } = useQuery({ 
+    queryKey: ['mar-detail', selectedVisitId], 
+    queryFn: () => api.getMARByVisit(selectedVisitId),
+    enabled: !!selectedVisitId 
+  });
+
+  // 4. Nhóm thuốc theo Y Lệnh (trong ca hiện tại)
+  const groupedByOrder = useMemo(() => {
+    if (!marItems) return {};
+    const filtered = marItems.filter(m => m.shift === activeShift);
+    
+    const groups: Record<string, { info: any, items: MARItem[] }> = {};
+    filtered.forEach(item => {
+      if (!groups[item.orderId]) {
+        groups[item.orderId] = {
+          info: {
+            orderId: item.orderId,
+            orderDate: item.orderDate,
+            doctorName: item.doctorName,
+            isStopped: item.isOrderStopped,
+            stoppedDate: item.stoppedDate
+          },
+          items: []
+        };
+      }
+      groups[item.orderId].items.push(item);
+    });
+    return groups;
+  }, [marItems, activeShift]);
+
+  const currentVisit = medicationEncounters?.find(v => v.id === selectedVisitId) || currentVisitData;
 
   const updateMutation = useMutation({
       mutationFn: (data: {id: string, status: MARStatus, reason?: string, note?: string, proof?: MedicationDeliveryProof}) => api.updateMARStatus(data.id, data.status, { reasonCode: data.reason, note: data.note, proof: data.proof }),
       onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['mar-detail', visitId] });
-          setExceptionModal(null);
+          queryClient.invalidateQueries({ queryKey: ['mar-detail', selectedVisitId] });
           setConfirmDeliveryItem(null);
-          setUndoItem(null);
-          setSelectedReason('');
-          setExceptionNote('');
-          setIsDispensed(false);
       }
   });
 
   const startCamera = async () => {
     setCameraError(null);
-    if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError("Trình duyệt không hỗ trợ camera.");
-        return;
-    }
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         if (videoRef.current) {
             videoRef.current.srcObject = stream;
             videoRef.current.play();
         }
-    } catch (err) {
-        setCameraError("Không thể truy cập camera.");
-    }
+    } catch (err) { setCameraError("Lỗi camera"); }
   };
 
   useEffect(() => {
       if (isScanning) startCamera();
-      else {
-          if (videoRef.current?.srcObject) {
-              (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
-          }
+      else if (videoRef.current?.srcObject) {
+          (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
       }
   }, [isScanning]);
 
-  const handleSimulateScan = () => {
-      setIsScanning(false);
-      setIsVerified(true);
-  };
-
-  const checkStock = (drugName: string) => {
-      if (!stock) return { available: false, qty: 0 };
-      const item = stock.find(s => drugName.includes(s.drugName) || s.drugName.includes(drugName.split(' ')[0]));
-      return { available: item ? item.quantity > 0 : false, qty: item ? item.quantity : 0 };
-  };
-
-  const handleAdminister = (item: any) => {
-      if (item.requiresScan && !isVerified) {
-          alert('BẮT BUỘC: Quét vòng tay người bệnh để xác thực trước khi dùng thuốc!');
-          return;
-      }
-      const stockStatus = checkStock(item.drugName);
-      if (!stockStatus.available) {
-          alert(`KHÔNG THỂ DÙNG: Thuốc "${item.drugName}" đã hết trong tủ trực!`);
-          return;
-      }
-      setConfirmDeliveryItem(item);
-  };
-
-  const handleDeliveryConfirm = (proof: MedicationDeliveryProof) => {
-      if (!confirmDeliveryItem) return;
-      updateMutation.mutate({
-          id: confirmDeliveryItem.id,
-          status: MARStatus.ADMINISTERED,
-          proof: proof
-      });
-  };
-
-  const handleUndoConfirm = () => {
-      if (!undoItem) return;
-      updateMutation.mutate({ 
-          id: undoItem.id, 
-          status: MARStatus.SCHEDULED,
-          note: 'Hoàn tác sai sót' 
-      });
-  };
-
-  const handleExceptionSubmit = () => {
-      if (!exceptionModal || !selectedReason) return;
-      const finalStatus = isDispensed ? MARStatus.RETURN_PENDING : exceptionModal.action;
-      const notePrefix = isDispensed ? `[${exceptionModal.action === MARStatus.REFUSED ? 'Từ chối' : 'Tạm hoãn'}] ` : '';
-      updateMutation.mutate({
-          id: exceptionModal.item.id,
-          status: finalStatus,
-          reason: selectedReason,
-          note: notePrefix + exceptionNote
-      });
-  };
-
-  const getStatusBadge = (status: MARStatus) => {
-      switch(status) {
-          case MARStatus.SCHEDULED: return <span className="text-slate-500 bg-slate-100 px-2 py-1 rounded text-xs font-bold border border-slate-200">Chờ dùng</span>;
-          case MARStatus.PREPARED: return <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs font-bold border border-blue-100">Đã soạn</span>;
-          case MARStatus.ADMINISTERED: return <span className="text-green-700 bg-green-100 px-2 py-1 rounded text-xs font-bold border border-green-200"><i className="fa-solid fa-check mr-1"></i>Đã dùng</span>;
-          case MARStatus.HELD: return <span className="text-amber-700 bg-amber-100 px-2 py-1 rounded text-xs font-bold border border-amber-200">Tạm hoãn</span>;
-          case MARStatus.REFUSED: return <span className="text-red-700 bg-red-100 px-2 py-1 rounded text-xs font-bold border border-red-200">BN Từ chối</span>;
-          case MARStatus.RETURN_PENDING: return <span className="text-purple-600 bg-purple-50 px-2 py-1 rounded text-xs font-bold border border-purple-100 animate-pulse">Chờ trả kho</span>;
-          case MARStatus.RETURNED: return <span className="text-slate-500 bg-slate-100 px-2 py-1 rounded text-xs font-bold line-through">Đã hoàn trả</span>;
-          case MARStatus.MISSED: return <span className="text-red-600 bg-white border border-red-200 px-2 py-1 rounded text-xs font-bold">Quên/Quá giờ</span>;
-          default: return <span>{status}</span>;
-      }
+  const getStatusStyle = (status: MARStatus) => {
+    switch(status) {
+      case MARStatus.ADMINISTERED: return "bg-green-50 text-green-600 border-green-200";
+      case MARStatus.RETURN_PENDING: return "bg-purple-50 text-purple-600 border-purple-200 animate-pulse";
+      case MARStatus.MISSED: return "bg-red-50 text-red-600 border-red-200";
+      default: return "bg-slate-50 text-slate-500 border-slate-200";
+    }
   };
 
   if (!currentUser) return null;
 
   return (
-    <div className="pb-20">
+    <div className="pb-24 max-w-[1000px] mx-auto space-y-6">
         {confirmDeliveryItem && (
             <MedicationDeliveryModal
-                patientName={patientInfo.name}
-                onConfirm={handleDeliveryConfirm}
+                patientName={currentVisit?.patientName || ''}
+                onConfirm={(p) => updateMutation.mutate({ id: confirmDeliveryItem.id, status: MARStatus.ADMINISTERED, proof: p })}
                 onCancel={() => setConfirmDeliveryItem(null)}
                 isLoading={updateMutation.isPending}
             />
         )}
 
-        {undoItem && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
-                <div className="bg-white w-full max-w-sm rounded-xl shadow-xl overflow-hidden">
-                    <div className="p-4 border-b bg-red-50 flex justify-between items-center">
-                        <h3 className="font-bold text-red-700 flex items-center gap-2">
-                            <i className="fa-solid fa-triangle-exclamation"></i> Xác nhận hoàn tác
-                        </h3>
-                        <button onClick={() => setUndoItem(null)} className="text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark text-lg"></i></button>
-                    </div>
-                    <div className="p-6">
-                        <p className="text-slate-700 font-medium mb-2">Hoàn tác trạng thái "Đã dùng"?</p>
-                        <p className="text-xs text-slate-500 bg-slate-100 p-3 rounded">Thuốc sẽ được chuyển về <b>Chờ dùng</b> và cộng lại tồn kho.</p>
-                    </div>
-                    <div className="p-4 border-t bg-slate-50 flex justify-end gap-3">
-                        <button onClick={() => setUndoItem(null)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium">Đóng</button>
-                        <button onClick={handleUndoConfirm} disabled={updateMutation.isPending} className="px-4 py-2 bg-red-600 text-white rounded font-bold hover:bg-red-700 shadow-sm">
-                            {updateMutation.isPending ? 'Xử lý...' : 'Xác nhận'}
-                        </button>
+        {/* Patient Header */}
+        <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sticky top-16 z-30">
+            <div className="flex items-center gap-4">
+                <button onClick={() => navigate('/medication')} className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:text-primary transition flex items-center justify-center border border-slate-100">
+                    <i className="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{currentVisit?.patientName}</h1>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-400 mt-0.5">
+                        <span className="text-primary font-mono">{currentVisit?.patientCode}</span>
+                        <span>•</span>
+                        <span className="uppercase">{currentVisit?.patientGender}</span>
                     </div>
                 </div>
             </div>
-        )}
 
-        {isScanning && (
-            <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-                <div className="relative w-full max-w-sm aspect-square bg-slate-800 rounded-2xl overflow-hidden border-4 border-slate-600 mb-6">
-                    {!cameraError ? (
-                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted></video>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-white">{cameraError}</div>
-                    )}
-                    <div className="absolute inset-0 border-[40px] border-black/50 pointer-events-none"></div>
-                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"></div>
-                </div>
-                <div className="flex flex-col gap-3 w-full max-w-xs">
-                    <button onClick={handleSimulateScan} className="bg-white text-slate-900 py-3 rounded-xl font-bold hover:bg-slate-100 shadow-lg flex items-center justify-center gap-2">
-                        <i className="fa-solid fa-qrcode"></i> Xác nhận mã: {patientInfo.code} (Demo)
+            <div className="flex gap-2 w-full md:w-auto">
+                {isVerified ? (
+                    <div className="flex-1 md:flex-none bg-green-500 text-white px-5 py-3 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-lg shadow-green-200">
+                        <i className="fa-solid fa-shield-check text-base"></i> Đã xác thực BN
+                    </div>
+                ) : (
+                    <button onClick={() => setIsScanning(true)} className="flex-1 md:flex-none bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-lg shadow-slate-200 hover:bg-black transition">
+                        <i className="fa-solid fa-qrcode text-base"></i> Quét mã xác nhận
                     </button>
-                    <button onClick={() => setIsScanning(false)} className="text-white/70 py-2 hover:text-white">Đóng</button>
-                </div>
+                )}
             </div>
-        )}
-
-        {exceptionModal && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
-                <div className="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
-                    <div className={`p-4 border-b flex justify-between items-center ${exceptionModal.action === MARStatus.REFUSED ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
-                        <h3 className={`font-bold text-lg ${exceptionModal.action === MARStatus.REFUSED ? 'text-red-700' : 'text-amber-700'}`}>Xử lý ngoại lệ</h3>
-                        <button onClick={() => { setExceptionModal(null); setSelectedReason(''); setIsDispensed(false); }} className="w-8 h-8 rounded-full hover:bg-black/10 flex items-center justify-center text-slate-500"><i className="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <div className="p-6 space-y-4">
-                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <div className="font-bold text-slate-800">{exceptionModal.item.drugName}</div>
-                            <div className="text-xs text-slate-500">{exceptionModal.item.dosage}</div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Lý do (Bắt buộc)</label>
-                            <select 
-                                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                                value={selectedReason}
-                                onChange={e => setSelectedReason(e.target.value)}
-                            >
-                                <option value="">-- Chọn lý do --</option>
-                                <option value="PATIENT_REFUSED">BN từ chối</option>
-                                <option value="CLINICAL">Chống chỉ định tạm thời</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className="p-4 border-t bg-slate-50 flex justify-end gap-3">
-                        <button onClick={() => { setExceptionModal(null); setSelectedReason(''); }} className="px-4 py-2 bg-white border border-slate-300 rounded-lg font-medium text-slate-700">Hủy</button>
-                        <button onClick={handleExceptionSubmit} disabled={!selectedReason || updateMutation.isPending} className="px-4 py-2 rounded-lg font-bold text-white bg-primary">Xác nhận</button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 sticky top-16 z-30">
-             <div className="flex justify-between items-start">
-                 <div className="flex items-center gap-3">
-                     <button onClick={() => navigate('/medication')} className="text-slate-400 hover:text-slate-600">
-                         <i className="fa-solid fa-arrow-left text-xl"></i>
-                     </button>
-                     <div>
-                         <h1 className="text-lg font-bold text-slate-900">{patientInfo.name}</h1>
-                         <div className="flex gap-2 text-xs text-slate-500">
-                            <span className="font-bold text-slate-700">{patientInfo.gender}</span>
-                            <span>•</span>
-                            <span>{patientInfo.code}</span>
-                         </div>
-                     </div>
-                 </div>
-                 
-                 {isVerified ? (
-                     <div className="bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-green-200 flex items-center gap-2 animate-fade-in">
-                         <i className="fa-solid fa-shield-check text-lg"></i>
-                         <span>Đã xác thực</span>
-                     </div>
-                 ) : (
-                     <button onClick={() => setIsScanning(true)} className="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2 animate-pulse">
-                         <i className="fa-solid fa-qrcode text-lg"></i>
-                         <span>Quét để mở khóa</span>
-                     </button>
-                 )}
-             </div>
         </div>
 
-        <div className="flex bg-slate-100 p-1 rounded-xl mb-6 overflow-x-auto">
-            {[ShiftType.MORNING, ShiftType.NOON, ShiftType.AFTERNOON, ShiftType.NIGHT].map(shift => (
+        {/* Requirement: Lần khám có kê thuốc Timeline */}
+        <div className="space-y-3">
+            <h3 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Lần khám phát sinh kê thuốc</h3>
+            <div className="flex gap-3 overflow-x-auto pb-4 px-4 scrollbar-hide">
+                {encountersLoading ? (
+                    <div className="flex gap-3 animate-pulse">
+                        {[1, 2, 3].map(i => <div key={i} className="h-20 w-52 bg-slate-100 rounded-3xl"></div>)}
+                    </div>
+                ) : medicationEncounters?.map(v => {
+                    const isSelected = selectedVisitId === v.id;
+                    const isActiveEncounter = v.treatmentStatus === TreatmentStatus.IN_PROGRESS;
+                    
+                    return (
+                        <button
+                            key={v.id}
+                            onClick={() => setSelectedVisitId(v.id)}
+                            className={`flex-shrink-0 px-5 py-4 rounded-[28px] border-2 transition-all text-left min-w-[220px] relative ${
+                                isSelected 
+                                ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' 
+                                : 'bg-white border-slate-100 text-slate-500 hover:border-primary/30 shadow-sm'
+                            }`}
+                        >
+                            {/* Mã lần khám (encounterCode) */}
+                            <div className="flex justify-between items-start mb-1.5">
+                                <div className={`font-mono text-[11px] font-black uppercase ${isSelected ? 'text-white' : 'text-primary'}`}>
+                                    {v.encounterCode}
+                                </div>
+                                {isActiveEncounter && (
+                                    <div className="bg-green-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase">Hiện tại</div>
+                                )}
+                            </div>
+
+                            {/* Ngày kê (lastMedicationOrderAt) */}
+                            <div className={`text-[10px] font-bold mb-1 ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
+                                <i className="fa-solid fa-calendar-day mr-1"></i>
+                                {v.lastMedicationOrderAt ? v.lastMedicationOrderAt : 'N/A'}
+                            </div>
+
+                            {/* Bác sĩ kê (doctorName) */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${isSelected ? 'bg-white/20' : 'bg-slate-50'}`}>
+                                    <i className="fa-solid fa-user-doctor"></i>
+                                </div>
+                                <span className={`text-[10px] font-black truncate ${isSelected ? 'text-white' : 'text-slate-700'}`}>
+                                    {v.doctorName}
+                                </span>
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+
+        {/* Shift Filter (Giữ nguyên) */}
+        <div className="bg-slate-100/50 p-1 rounded-2xl flex gap-1 shadow-inner mx-4">
+            {[
+                { id: ShiftType.MORNING, label: 'Sáng', icon: 'fa-sun' },
+                { id: ShiftType.NOON, label: 'Trưa', icon: 'fa-cloud-sun' },
+                { id: ShiftType.AFTERNOON, label: 'Chiều', icon: 'fa-cloud' },
+                { id: ShiftType.NIGHT, label: 'Tối', icon: 'fa-moon' }
+            ].map(s => (
                 <button
-                    key={shift}
-                    onClick={() => setActiveShift(shift)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition whitespace-nowrap ${activeShift === shift ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    key={s.id}
+                    onClick={() => setActiveShift(s.id)}
+                    className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all flex flex-col items-center gap-1 ${activeShift === s.id ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:bg-white/40'}`}
                 >
-                    {shift === 'MORNING' ? 'Sáng' : shift === 'NOON' ? 'Trưa' : shift === 'AFTERNOON' ? 'Chiều' : 'Tối'}
+                    <i className={`fa-solid ${s.icon}`}></i> {s.label}
                 </button>
             ))}
         </div>
 
-        <div className="space-y-4">
-            {currentShiftItems.length === 0 ? (
-                <div className="text-center py-12 flex flex-col items-center text-slate-400">
-                    <i className="fa-solid fa-calendar-day text-4xl mb-3 text-slate-200"></i>
-                    <p>Không có lịch trong ca này.</p>
+        {/* Orders & MAR Content */}
+        <div className="px-4 space-y-8">
+            {itemsLoading ? (
+                <div className="py-20 text-center"><i className="fa-solid fa-circle-notch fa-spin text-4xl text-primary opacity-20"></i></div>
+            ) : Object.keys(groupedByOrder).length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-200">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 text-4xl mx-auto mb-4">
+                        <i className="fa-solid fa-pills"></i>
+                    </div>
+                    <h3 className="text-slate-400 font-bold uppercase tracking-widest">Không có thuốc trong ca trực này</h3>
+                    <p className="text-[10px] text-slate-300 mt-2 italic">Kết quả cho lần khám: {currentVisit?.encounterCode}</p>
                 </div>
             ) : (
-                currentShiftItems.map((item: any) => {
-                    const isCompleted = item.status === MARStatus.ADMINISTERED;
-                    return (
-                        <div key={item.id} className={`bg-white rounded-xl border shadow-sm overflow-hidden ${isCompleted ? 'border-green-200 bg-green-50/20' : 'border-slate-200'}`}>
-                            <div className="p-4 flex flex-col sm:flex-row gap-4">
-                                <div className="flex sm:flex-col items-center sm:items-start justify-between sm:w-24 border-b sm:border-b-0 sm:border-r border-slate-100 pb-2 sm:pb-0 sm:pr-4">
-                                    <div className="text-xl font-bold text-slate-700 font-mono">{item.scheduledTime}</div>
-                                    <div className="mt-1">{getStatusBadge(item.status)}</div>
+                Object.values(groupedByOrder).map((group: any) => (
+                    <div key={group.info.orderId} className={`space-y-4 ${group.info.isStopped ? 'opacity-60 grayscale' : ''}`}>
+                        {/* Order Header */}
+                        <div className="flex items-center gap-4">
+                            <div className={`h-px flex-1 ${group.info.isStopped ? 'bg-red-100' : 'bg-slate-100'}`}></div>
+                            <div className={`flex flex-col items-center px-4 py-2 rounded-2xl border text-center ${group.info.isStopped ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
+                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <i className="fa-solid fa-file-prescription"></i>
+                                    Y lệnh {group.info.orderId} 
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-lg font-bold text-slate-900 truncate pr-2">{item.drugName}</h3>
-                                    <div className="text-sm text-slate-600 mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                                        <span>{item.dosage}</span>
-                                        <span>{item.route}</span>
-                                    </div>
+                                <div className={`text-[10px] font-black ${group.info.isStopped ? 'text-red-700' : 'text-slate-700'}`}>
+                                    {group.info.doctorName} • {group.info.orderDate}
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-3 flex justify-end gap-2 border-t border-slate-100">
-                                {!isCompleted && (
-                                    <button onClick={() => handleAdminister(item)} disabled={!isVerified} className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 ${!isVerified ? 'bg-slate-300 text-slate-500' : 'bg-primary text-white hover:bg-sky-600'}`}>
-                                        {!isVerified && <i className="fa-solid fa-lock"></i>}
-                                        Dùng thuốc
-                                    </button>
-                                )}
-                                {isCompleted && (
-                                    <div className="w-full flex justify-between items-center text-xs">
-                                        <div className="text-green-700 font-medium">Đã dùng bởi {item.administeredBy}</div>
-                                        <button onClick={() => setUndoItem(item)} className="text-slate-400 hover:text-red-500 underline">Hoàn tác</button>
-                                    </div>
-                                )}
-                            </div>
+                            <div className={`h-px flex-1 ${group.info.isStopped ? 'bg-red-100' : 'bg-slate-100'}`}></div>
                         </div>
-                    );
-                })
+
+                        {/* Medications Table */}
+                        <div className="space-y-3">
+                            {group.items.map((item: MARItem) => {
+                                const isDone = item.status === MARStatus.ADMINISTERED;
+                                return (
+                                    <div key={item.id} className={`bg-white rounded-[28px] border-2 transition-all p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg ${isDone ? 'border-green-100 bg-green-50/20' : 'border-slate-100'}`}>
+                                        <div className="flex md:flex-col items-center md:items-start justify-between md:w-28 border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-4">
+                                            <div className="text-2xl font-black text-slate-800 font-mono tracking-tighter">{item.scheduledTime}</div>
+                                            <div className={`mt-1 px-2.5 py-1 rounded-xl text-[9px] font-black uppercase border flex items-center gap-1.5 ${getStatusStyle(item.status)}`}>
+                                                {item.status === MARStatus.SCHEDULED ? 'Chờ dùng' : 'Đã dùng'}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 space-y-1">
+                                            <h4 className="text-lg font-black text-slate-900 leading-tight">{item.drugName}</h4>
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-500 uppercase tracking-tight">
+                                                <span className="flex items-center gap-1.5"><i className="fa-solid fa-vial text-[10px] text-primary"></i> {item.dosage}</span>
+                                                <span className="flex items-center gap-1.5"><i className="fa-solid fa-syringe text-[10px] text-primary"></i> {item.route}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-end">
+                                            {!isDone && !item.isOrderStopped && currentVisit?.treatmentStatus === TreatmentStatus.IN_PROGRESS && (
+                                                <button 
+                                                    onClick={() => isVerified ? setConfirmDeliveryItem(item) : setIsScanning(true)} 
+                                                    className={`px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg transition-all active:scale-95 flex items-center gap-2 ${isVerified ? 'bg-primary text-white shadow-primary/20 hover:bg-sky-600' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}
+                                                >
+                                                    {!isVerified && <i className="fa-solid fa-lock"></i>}
+                                                    Xác nhận dùng
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))
             )}
         </div>
+
+        {/* Scan UI Simulation */}
+        {isScanning && (
+            <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-6 backdrop-blur-md">
+                <div className="relative w-full max-w-sm aspect-square bg-slate-800 rounded-[48px] overflow-hidden border-8 border-slate-700 shadow-2xl mb-8 group">
+                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted></video>
+                    <div className="absolute top-1/2 left-0 right-0 h-1 bg-primary animate-pulse shadow-[0_0_20px_#0ea5e9]"></div>
+                </div>
+                <button 
+                    onClick={() => { setIsScanning(false); setIsVerified(true); }} 
+                    className="bg-white text-slate-900 py-4 rounded-[24px] font-black text-sm uppercase shadow-xl flex items-center justify-center gap-3 px-8"
+                >
+                    Mô phỏng quét: {currentVisit?.patientCode}
+                </button>
+            </div>
+        )}
     </div>
   );
 };

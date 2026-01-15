@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import { MedVisitStatus, MedGroupStatus } from '../types';
+/* Fix: Removed non-existent MedGroupStatus */
+import { MedVisitStatus } from '../types';
 
 export const MedicationDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'VISIT' | 'GROUP' | 'ITEM'>('GROUP');
   const [keyword, setKeyword] = useState('');
-  const deptCode = 'NOI1'; // Cố định theo tài khoản
+  const [deptCode, setDeptCode] = useState('NOI1'); // Cố định theo tài khoản
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ['med-dashboard', deptCode, keyword],
@@ -53,10 +54,10 @@ export const MedicationDashboard: React.FC = () => {
                     <tbody className="divide-y divide-slate-100">
                         {isLoading ? (
                             <tr><td colSpan={4} className="text-center py-10"><i className="fa-solid fa-circle-notch fa-spin text-primary"></i></td></tr>
-                        ) : stats?.pendingGroups.length === 0 ? (
+                        ) : (stats as any)?.pendingGroups.length === 0 ? (
                             <tr><td colSpan={4} className="text-center py-10 text-slate-400">Không có dữ liệu chờ cấp phát.</td></tr>
                         ) : (
-                            stats?.pendingGroups.map((g: any) => (
+                            (stats as any)?.pendingGroups.map((g: any) => (
                                 <tr key={g.id} className="hover:bg-slate-50 transition">
                                     <td className="px-4 py-3">
                                         <div className="font-bold text-slate-900">{g.patientName}</div>
@@ -65,15 +66,4 @@ export const MedicationDashboard: React.FC = () => {
                                     <td className="px-4 py-3 font-medium text-slate-600">{g.room || '--'} - {g.bed || '--'}</td>
                                     <td className="px-4 py-3">{new Date(g.prescriptionDate).toLocaleDateString('vi-VN')}</td>
                                     <td className="px-4 py-3 text-right">
-                                        <Link to={`/medication/${g.visitId}`} className="text-primary hover:underline font-bold">Phát thuốc</Link>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-  );
-};
+                                        <

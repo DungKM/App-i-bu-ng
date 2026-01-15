@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import { SyncStatus, SyncType } from '../types';
+import { SyncStatus, SyncType, SyncQueueItem } from '../types';
 
 export const SyncDashboard: React.FC = () => {
   const queryClient = useQueryClient();
@@ -17,7 +17,7 @@ export const SyncDashboard: React.FC = () => {
   // Mutations
   const processMutation = useMutation({
       mutationFn: api.processSyncQueue,
-      onSuccess: (data) => {
+      onSuccess: (data: any) => {
           queryClient.invalidateQueries({ queryKey: ['sync-queue'] });
           alert(`Đã xử lý: ${data.processed} thành công, ${data.failed} thất bại.`);
       }
@@ -37,7 +37,8 @@ export const SyncDashboard: React.FC = () => {
       }
   };
 
-  const pendingCount = queue?.filter(i => i.status === SyncStatus.PENDING || i.status === SyncStatus.FAILED).length || 0;
+  /* Fix: Cast queue to SyncQueueItem[] */
+  const pendingCount = (queue as SyncQueueItem[])?.filter(i => i.status === SyncStatus.PENDING || i.status === SyncStatus.FAILED).length || 0;
 
   return (
     <div className="space-y-6">
@@ -71,10 +72,12 @@ export const SyncDashboard: React.FC = () => {
                     <tbody className="divide-y divide-slate-100">
                         {isLoading ? (
                             <tr><td colSpan={5} className="text-center py-8"><i className="fa-solid fa-circle-notch fa-spin text-primary"></i></td></tr>
-                        ) : queue?.length === 0 ? (
+                        ) : /* Fix: Cast queue to SyncQueueItem[] */
+                        (!queue || (queue as SyncQueueItem[]).length === 0) ? (
                             <tr><td colSpan={5} className="text-center py-8 text-slate-400">Không có giao dịch nào trong hàng đợi.</td></tr>
                         ) : (
-                            queue?.map(item => (
+                            /* Fix: Cast queue to SyncQueueItem[] */
+                            (queue as SyncQueueItem[]).map(item => (
                                 <tr key={item.id} className="hover:bg-slate-50 transition">
                                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                                         {new Date(item.updatedAt).toLocaleString('vi-VN')}

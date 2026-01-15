@@ -135,9 +135,12 @@ export const SurgeryDetail: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                                 <div><span className="text-slate-500 block">Ngày sinh</span> <span className="font-medium">{new Date(patientInfo.dob).toLocaleDateString('vi-VN')}</span></div>
                                 <div><span className="text-slate-500 block">Giới tính</span> <span className="font-medium">{patientInfo.gender}</span></div>
-                                <div><span className="text-slate-500 block">Khoa chỉ định</span> <span className="font-medium">{patientInfo.visitInfo.dept}</span></div>
-                                <div><span className="text-slate-500 block">Ngày chỉ định</span> <span className="font-medium">{new Date(patientInfo.visitInfo.admissionDate).toLocaleDateString('vi-VN')}</span></div>
-                                <div className="col-span-2"><span className="text-slate-500 block">Chẩn đoán</span> <span className="font-medium">{patientInfo.visitInfo.diagnosis}</span></div>
+                                {/* Fix: Khoa chỉ định refers to indication department, which is in the group object */}
+                                <div><span className="text-slate-500 block">Khoa chỉ định</span> <span className="font-medium">{group.indicationDept}</span></div>
+                                {/* Fix: Removed the non-existent visitInfo property access */}
+                                <div><span className="text-slate-500 block">Ngày chỉ định</span> <span className="font-medium">{new Date(patientInfo.admissionDate).toLocaleDateString('vi-VN')}</span></div>
+                                {/* Fix: Access diagnosis directly from patientInfo */}
+                                <div className="col-span-2"><span className="text-slate-500 block">Chẩn đoán</span> <span className="font-medium">{patientInfo.diagnosis}</span></div>
                             </div>
                           </>
                       ) : (

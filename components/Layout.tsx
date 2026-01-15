@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UserRole, SyncStatus } from '../types';
+import { UserRole, SyncStatus, SyncQueueItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
@@ -17,8 +17,9 @@ export const Layout: React.FC = () => {
       refetchInterval: 5000 // Poll every 5s to check sync status
   });
 
-  const failedItems = queue?.filter(i => i.status === SyncStatus.FAILED) || [];
-  const pendingItems = queue?.filter(i => i.status === SyncStatus.PENDING || i.status === SyncStatus.SYNCING) || [];
+  /* Fix: Cast queue to SyncQueueItem[] to fix filter error */
+  const failedItems = (queue as SyncQueueItem[])?.filter(i => i.status === SyncStatus.FAILED) || [];
+  const pendingItems = (queue as SyncQueueItem[])?.filter(i => i.status === SyncStatus.PENDING || i.status === SyncStatus.SYNCING) || [];
 
   if (!user) return null;
 
