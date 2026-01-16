@@ -2,9 +2,9 @@
 import React, { useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UserRole, SyncStatus, SyncQueueItem } from '../src/types';
-import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { UserRole, SyncStatus, SyncQueueItem } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/services/api';
 
 export const Layout: React.FC = () => {
   const location = useLocation();

@@ -2,8 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
-import { Patient, PatientStatus } from '../types';
+import { api } from '@/services/api';
+import { Patient, PatientStatus } from '@/types';
 
 // --- Sub-components for Ward Map ---
 
@@ -196,7 +196,7 @@ export const PatientList: React.FC = () => {
       <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
         <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-primary text-white rounded-[32px] flex items-center justify-center text-4xl shadow-xl shadow-primary/20 transform -rotate-3 transition hover:rotate-0">
-              <i className="fa-solid fa-hospital-user"></i>
+              <i className="fa-regular fa-hospital"></i>
             </div>
             <div>
                 <h1 className="text-4xl font-black text-slate-900 uppercase leading-none mb-2 tracking-tighter">Sơ đồ điều trị</h1>

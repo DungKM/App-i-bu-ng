@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { ShiftType, ShiftStatus, MedVisit, MARStatus } from '../types';
+import { api } from '@/services/api';
+import { ShiftType, ShiftStatus, MedVisit, MARStatus } from '@/types';
 
 const MiniShiftOverview: React.FC<{ 
   label: string; 

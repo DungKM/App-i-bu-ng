@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { SyncStatus, SyncType, SyncQueueItem } from '../types';
+import { api } from '@/services/api';
+import { SyncStatus, SyncType, SyncQueueItem } from '@/types';
 
 export const SyncDashboard: React.FC = () => {
   const queryClient = useQueryClient();

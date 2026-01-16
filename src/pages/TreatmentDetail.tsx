@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { api } from '../services/api';
-import { MedicalRecordMain, MedicalRecordConclusion, RecordCategory, UserRole } from '../types';
-import { useAuth } from '../context/AuthContext';
+import { api } from '@/services/api';
+import { MedicalRecordMain, MedicalRecordConclusion, RecordCategory, UserRole } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export const TreatmentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { SurgeryOrderStatus, SurgeryGroupStatus, UserRole } from '../types';
-import { SignatureCapture } from '../components/SignatureCapture';
-import { useAuth } from '../context/AuthContext';
+import { api } from '@/services/api';
+import { SurgeryOrderStatus, SurgeryGroupStatus, UserRole } from '@/types';
+import { SignatureCapture } from '@/components/SignatureCapture';
+import { useAuth } from '@/context/AuthContext';
 
 // Local UI helper for order status
 const getOrderBadge = (status: SurgeryOrderStatus) => {

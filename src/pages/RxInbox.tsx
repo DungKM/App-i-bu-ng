@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { RxChangeType, RxInboxItem } from '../types';
+import { api } from '@/services/api';
+import { RxChangeType, RxInboxItem } from '@/types';
 
 export const RxInbox: React.FC = () => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);

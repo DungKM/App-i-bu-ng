@@ -1,48 +1,33 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MediRound - HIS Ward Round App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#0ea5e9', // Sky 500
-              secondary: '#64748b', // Slate 500
-              success: '#22c55e', // Green 500
-              danger: '#ef4444', // Red 500
-              warning: '#f59e0b', // Amber 500
-              background: '#f8fafc', // Slate 50
-            }
-          }
-        }
-      }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0?dev",
-    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime?dev",
-    "react-dom": "https://esm.sh/react-dom@18.2.0?dev",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?external=react,react-dom&dev",
-    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@5.28.4?external=react,react-dom&dev",
-    "zod": "https://esm.sh/zod@3.22.4",
-    "react-hook-form": "https://esm.sh/react-hook-form@7.51.1?external=react,react-dom&dev",
-    "@hookform/resolvers/zod": "https://esm.sh/@hookform/resolvers@3.3.4/zod?external=react,react-dom&dev",
-    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@hookform/resolvers/": "https://esm.sh/@hookform/resolvers@^5.2.2/"
-  }
-}
-</script>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediRound</title>
+
+  <!-- Tailwind CDN (dev OK) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
-  <body class="bg-background text-slate-900 font-sans antialiased">
-    <div id="root"></div>
-  </body>
+
+<body>
+  <div id="root"></div>
+
+  <!-- QUAN TRỌNG -->
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0ea5e9" /* xanh sky */,
+          },
+        },
+      },
+    };
+  </script>
+</body>
+
 </html>

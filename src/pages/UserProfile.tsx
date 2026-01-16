@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
-import { api } from '../services/api';
+import { api } from '@/services/api';
 
 interface ProfileForm {
     name: string;

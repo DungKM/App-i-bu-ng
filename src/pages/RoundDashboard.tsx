@@ -2,9 +2,9 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
+import { api } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types';
 
 export const RoundDashboard: React.FC = () => {
   const { user } = useAuth();

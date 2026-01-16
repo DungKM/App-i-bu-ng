@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { TreatmentStatus } from '../types';
+import { api } from '@/services/api';
+import { TreatmentStatus } from '@/types';
 
 const statusColors = {
   [TreatmentStatus.WAITING]: 'bg-gray-100 text-gray-700 border-gray-200',

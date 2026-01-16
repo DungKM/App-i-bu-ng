@@ -1,8 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Patient, MedicalRecord, VitalSign, MedicalOrder, ProgressNote } from "../types";
+import { Patient, MedicalRecord, VitalSign, MedicalOrder, ProgressNote } from "@/types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 interface PatientContext {
   patient: Patient;

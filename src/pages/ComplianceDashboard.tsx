@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { ShiftType } from '../types';
+import { api } from '@/services/api';
+import { ShiftType } from '@/types';
 import { Link } from 'react-router-dom';
 
 export const ComplianceDashboard: React.FC = () => {

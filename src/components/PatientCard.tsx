@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Patient, PatientStatus } from '../types';
+import { Patient, PatientStatus } from '@/types';
 import { Link } from 'react-router-dom';
 
 const statusColors = {

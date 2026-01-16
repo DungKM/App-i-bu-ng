@@ -18,7 +18,7 @@ import {
   RxInboxItem, SyncQueueItem, SyncStatus,
   MedicalRecordMain, MedicalRecordConclusion, Attachment,
   MedicationDeliveryProof, ReasonCode, RecordCategory, ProgressNote
-} from '../types';
+} from '@/types';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

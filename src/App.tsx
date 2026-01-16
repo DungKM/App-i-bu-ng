@@ -5,23 +5,40 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
+// import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // Lazy Load Pages for Performance
-const PatientList = React.lazy(() => import('./pages/PatientList').then(module => ({ default: module.PatientList })));
-const PatientDetail = React.lazy(() => import('./pages/PatientDetail').then(module => ({ default: module.PatientDetail })));
-const MedicationList = React.lazy(() => import('./pages/MedicationList').then(module => ({ default: module.MedicationList })));
-const MedicationDetail = React.lazy(() => import('./pages/MedicationDetail').then(module => ({ default: module.MedicationDetail })));
-const WardStock = React.lazy(() => import('./pages/WardStock').then(module => ({ default: module.WardStock })));
-const MedicationDashboard = React.lazy(() => import('./pages/MedicationDashboard').then(module => ({ default: module.MedicationDashboard })));
-const RxInbox = React.lazy(() => import('./pages/RxInbox').then(module => ({ default: module.RxInbox })));
-const TreatmentList = React.lazy(() => import('./pages/TreatmentList').then(module => ({ default: module.TreatmentList })));
-const TreatmentDetail = React.lazy(() => import('./pages/TreatmentDetail').then(module => ({ default: module.TreatmentDetail })));
-const SurgeryList = React.lazy(() => import('./pages/SurgeryList').then(module => ({ default: module.SurgeryList })));
-const SurgeryDetail = React.lazy(() => import('./pages/SurgeryDetail').then(module => ({ default: module.SurgeryDetail })));
-const RoundDashboard = React.lazy(() => import('./pages/RoundDashboard').then(module => ({ default: module.RoundDashboard })));
-const UserProfile = React.lazy(() => import('./pages/UserProfile').then(module => ({ default: module.UserProfile })));
-const SyncDashboard = React.lazy(() => import('./pages/SyncDashboard').then(module => ({ default: module.SyncDashboard })));
-const ComplianceDashboard = React.lazy(() => import('./pages/ComplianceDashboard').then(module => ({ default: module.ComplianceDashboard })));
+const PatientList = lazyNamed(() => import('@/pages/PatientList'), 'PatientList');
+const PatientDetail = lazyNamed(() => import('@/pages/PatientDetail'), 'PatientDetail');
+const MedicationList = lazyNamed(() => import('@/pages/MedicationList'), 'MedicationList');
+const MedicationDetail = lazyNamed(() => import('@/pages/MedicationDetail'), 'MedicationDetail');
+const WardStock = lazyNamed(() => import('@/pages/WardStock'), 'WardStock');
+const MedicationDashboard = lazyNamed(() => import('@/pages/MedicationDashboard'), 'MedicationDashboard');
+const RxInbox = lazyNamed(() => import('@/pages/RxInbox'), 'RxInbox');
+const TreatmentList = lazyNamed(() => import('@/pages/TreatmentList'), 'TreatmentList');
+const TreatmentDetail = lazyNamed(() => import('@/pages/TreatmentDetail'), 'TreatmentDetail');
+const SurgeryList = lazyNamed(() => import('@/pages/SurgeryList'), 'SurgeryList');
+const SurgeryDetail = lazyNamed(() => import('@/pages/SurgeryDetail'), 'SurgeryDetail');
+const RoundDashboard = lazyNamed(() => import('@/pages/RoundDashboard'), 'RoundDashboard');
+const UserProfile = lazyNamed(() => import('@/pages/UserProfile'), 'UserProfile');
+const SyncDashboard = lazyNamed(() => import('@/pages/SyncDashboard'), 'SyncDashboard');
+const ComplianceDashboard = lazyNamed(() => import('@/pages/ComplianceDashboard'), 'ComplianceDashboard');
+
+
+
+function lazyNamed<T extends React.ComponentType<any>>(
+  loader: () => Promise<any>,
+  name: string
+) {
+  return React.lazy(async () => {
+    const mod = await loader();
+    const comp = mod[name];
+    if (!comp) {
+      throw new Error(`Lazy import failed: module has no export named "${name}"`);
+    }
+    return { default: comp as T };
+  });
+}
 
 // Optimized Query Client
 const queryClient = new QueryClient({

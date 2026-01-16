@@ -1,4 +1,9 @@
+const express = require("express");
+const cors = require("cors");
 
+const app = express();
+app.use(cors());
+app.use(express.json());
 // --- MEDICATION: MAR ---
 app.get('/api/mar/patients', (req, res) => {
     const { fromDate, toDate, deptCode } = req.query;
@@ -35,3 +40,5 @@ app.get('/api/mar/patients', (req, res) => {
     res.json(r);
 });
 app.get('/api/mar/detail', (req, res) => res.json(MAR_ITEMS.filter(m => m.visitId === req.query.visitId)));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { MARStatus, ShiftType, MARItem, MedicationDeliveryProof, MedVisit, TreatmentStatus } from '../types';
-import { useAuth } from '../context/AuthContext';
-import { MedicationDeliveryModal } from '../components/MedicationDeliveryModal';
+import { api } from '@/services/api';
+import { MARStatus, ShiftType, MARItem, MedicationDeliveryProof, MedVisit, TreatmentStatus } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { MedicationDeliveryModal } from '@/components/MedicationDeliveryModal';
 
 export const MedicationDetail: React.FC = () => {
   const { visitId } = useParams<{ visitId: string }>();

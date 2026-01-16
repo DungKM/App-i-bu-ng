@@ -5,12 +5,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api } from '../services/api';
-import { aiService } from '../services/ai';
-import { UserRole, OrderType, OrderStatus, PatientStatus, MedicalRecord, Attachment, VitalSign, NEWS2Result } from '../types';
-import { SignatureCapture } from '../components/SignatureCapture';
-import { AIAssistant } from '../components/AIAssistant';
-import { useAuth } from '../context/AuthContext';
+import { api } from '@/services/api';
+import { aiService } from '@/services/ai';
+import { UserRole, OrderType, OrderStatus, PatientStatus, MedicalRecord, Attachment, VitalSign, NEWS2Result } from '@/types';
+import { SignatureCapture } from '@/components/SignatureCapture';
+import { AIAssistant } from '@/components/AIAssistant';
+import { useAuth } from '@/context/AuthContext';
 
 // --- NEWS2 Logic ---
 const calculateNEWS2 = (v: VitalSign): NEWS2Result => {

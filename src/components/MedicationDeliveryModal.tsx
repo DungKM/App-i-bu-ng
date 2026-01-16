@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MedicationDeliveryProof } from '../types';
+import { MedicationDeliveryProof } from '@/src/types';
 import { SignatureCapture } from './SignatureCapture';
 
 interface Props {

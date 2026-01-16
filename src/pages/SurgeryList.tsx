@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { SurgeryGroupStatus } from '../types';
+import { api } from '@/services/api';
+import { SurgeryGroupStatus } from '@/types';
 
 const statusColors = {
   [SurgeryGroupStatus.NEW]: 'bg-red-100 text-red-700 border-red-200',

@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { IssueNoteStatus, HisIssueStatus, StockTransactionType, MARStatus, IssueNote } from '../types';
+import { api } from '@/services/api';
+import { IssueNoteStatus, HisIssueStatus, StockTransactionType, MARStatus, IssueNote } from '@/types';
 
 interface ReceiveInput {
     qty: number;

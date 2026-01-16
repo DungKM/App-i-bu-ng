@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { MedVisitStatus } from '../types';
+import { api } from '@/services/api';
+import { MedVisitStatus } from '@/types';
 
 export const MedicationDashboard: React.FC = () => {
   const [keyword, setKeyword] = useState('');
