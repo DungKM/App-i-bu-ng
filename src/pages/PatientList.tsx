@@ -10,20 +10,16 @@ import { Patient, PatientStatus } from '@/types';
 const Legend: React.FC = () => (
   <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white px-6 py-4 rounded-[32px] border border-slate-100 shadow-sm">
     <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-white border-2 border-dashed border-slate-300"></div>
-      <span>Trống</span>
-    </div>
-    <div className="flex items-center gap-2">
       <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_8px_rgba(14,165,233,0.5)]"></div>
-      <span>Đang chờ dùng</span>
+      <span>Chờ dùng</span>
     </div>
     <div className="flex items-center gap-2">
       <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-      <span>Đã hoàn thành</span>
+      <span>Hoàn thành</span>
     </div>
     <div className="flex items-center gap-2">
       <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
-      <span>Cảnh báo / Quá giờ</span>
+      <span>Quá giờ</span>
     </div>
   </div>
 );
@@ -201,7 +197,7 @@ export const PatientList: React.FC = () => {
             <div>
                 <h1 className="text-4xl font-black text-slate-900 uppercase leading-none mb-2 tracking-tighter">Sơ đồ điều trị</h1>
                 <div className="flex items-center gap-4 text-slate-400 text-xs font-black uppercase tracking-[0.2em]">
-                    <span className="flex items-center gap-2 bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-circle text-[6px] animate-pulse"></i> Trực tuyến</span>
+                    <span className="flex items-center gap-2 bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-circle text-[6px] animate-pulse"></i>Khoa sản</span>
                     <span className="flex items-center gap-2"><i className="fa-solid fa-calendar"></i> {new Date().toLocaleDateString('vi-VN')}</span>
                 </div>
             </div>
@@ -210,19 +206,19 @@ export const PatientList: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full lg:w-auto">
             <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex flex-col items-center shadow-inner">
                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng giường</div>
-               <div className="text-2xl font-black text-slate-800">{statsSummary.total}</div>
+               <div className="text-2xl font-black text-slate-800">28</div>
             </div>
             <div className="bg-amber-50 p-5 rounded-[24px] border border-amber-100 flex flex-col items-center shadow-inner">
-               <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">Đang chờ</div>
-               <div className="text-2xl font-black text-amber-700">{statsSummary.pendingMed}</div>
+               <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">Số bệnh nhân</div>
+               <div className="text-2xl font-black text-amber-700">7</div>
             </div>
             <div className="bg-green-50 p-5 rounded-[24px] border border-green-100 flex flex-col items-center shadow-inner">
-               <div className="text-[9px] font-black text-green-500 uppercase tracking-widest mb-1">Đã xong</div>
-               <div className="text-2xl font-black text-green-700">{statsSummary.occupied - statsSummary.pendingMed - statsSummary.noOrder}</div>
+               <div className="text-[9px] font-black text-green-500 uppercase tracking-widest mb-1">Số phòng</div>
+               <div className="text-2xl font-black text-green-700">4</div>
             </div>
             <div className="bg-blue-50 p-5 rounded-[24px] border border-blue-100 flex flex-col items-center shadow-inner">
-               <div className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Kế hoạch</div>
-               <div className="text-2xl font-black text-blue-700">{statsSummary.occupied}</div>
+               <div className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Giường TYC</div>
+               <div className="text-2xl font-black text-blue-700">8</div>
             </div>
         </div>
       </div>
@@ -246,8 +242,8 @@ export const PatientList: React.FC = () => {
             className="px-6 py-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-sm font-black outline-none focus:bg-white focus:border-primary/30 transition-all text-slate-700 shadow-inner"
           >
             <option value="ALL">Tất cả trạng thái</option>
-            <option value="DONE">🟢 Đã hoàn thành</option>
-            <option value="PENDING">🟡 Đang chờ dùng</option>
+            <option value="DONE">🟢 Hoàn thành</option>
+            <option value="PENDING">🟡 Chờ dùng</option>
             <option value="NONE">⚪ Chưa có y lệnh</option>
           </select>
         </div>
@@ -271,8 +267,6 @@ export const PatientList: React.FC = () => {
                     <h3 className="font-black text-2xl text-slate-800 uppercase tracking-tighter">Phòng {room.room}</h3>
                     <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">
                         <span>{occupiedInRoom}/{room.beds.length} Bệnh nhân</span>
-                        <span className="w-1.5 h-1.5 bg-slate-200 rounded-full"></span>
-                        <span className="text-primary">Khoa Nội Tổng Hợp</span>
                     </div>
                 </div>
                 <div className="h-px flex-1 bg-slate-100"></div>

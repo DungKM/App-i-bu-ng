@@ -168,7 +168,7 @@ export const MedicationList: React.FC = () => {
                         {isClosed && <span className="ml-3 bg-red-600 text-white text-[8px] px-2 py-1 rounded-full uppercase font-black align-middle tracking-widest shadow-md animate-pulse"><i className="fa-solid fa-lock mr-1"></i>Đã chốt</span>}
                     </h1>
                     <div className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5 font-bold bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-hospital"></i> Khoa Nội Tổng Hợp</span>
+                        <span className="flex items-center gap-1.5 font-bold bg-blue-50 text-primary px-3 py-1 rounded-full"><i className="fa-solid fa-hospital"></i> Khoa Sản</span>
                         <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
                         <span className="flex items-center gap-1.5"><i className="fa-solid fa-shield-halved"></i> Giám sát 5 đúng</span>
                     </div>

@@ -1,0 +1,35 @@
+{
+  "TenKhoa": "Khoa sản",
+  "ThoiGian":"16/01/2026",
+  "ThongKeGiuong": {
+    "tonggiuong": 28,
+    "tongbenhnhan": 7,
+    "tongphong": 4,
+    "tonggiuongtheoyeucau": 8
+  },
+  "DSPhong": [
+    {
+     "Ma": "P201",
+     "MaBH": "P201",
+     "SoGiuong": 0.0,
+     "SoBenhNhan": 2.0,
+     "DsGiuong": [
+        {
+          "Ma": "H001",
+          "MaBH": "H001",
+          "isTyc": false,
+          "DsBenhAn": {
+            "IdBenhAn": "5299dd07-d082-407d-932c-1b590d3d604e",
+            "MaBenhNhan": "BN23001",
+            "fullName": "PHẠM VĂN MINH",
+            "gender": "NAM",
+            "age": 41
+          },
+          "lieudung": { 
+              "tongthuocdung": 10,
+              "solieudadung": 9
+           }
+        }]
+    }
+  ]
+}

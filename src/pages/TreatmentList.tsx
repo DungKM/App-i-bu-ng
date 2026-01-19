@@ -30,7 +30,7 @@ export const TreatmentList: React.FC = () => {
         <h1 className="text-2xl font-bold text-slate-900 uppercase">Danh sách đi buồng</h1>
         <div className="flex flex-col md:flex-row gap-3">
             <div className="bg-blue-50 text-primary px-4 py-2 rounded-lg font-black text-sm border border-blue-100 flex items-center gap-2 whitespace-nowrap">
-                <i className="fa-solid fa-hospital"></i> Khoa Nội Tổng Hợp
+                <i className="fa-solid fa-hospital"></i> Khoa Sản
             </div>
             <div className="relative flex-1">
                 <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>

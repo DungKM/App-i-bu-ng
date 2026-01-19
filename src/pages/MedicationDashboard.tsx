@@ -29,7 +29,7 @@ export const MedicationDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Giám sát cấp phát thuốc</h1>
-                <p className="text-slate-500 text-sm">Khoa: <span className="font-bold text-primary">Nội Tổng Hợp</span></p>
+                <p className="text-slate-500 text-sm">Khoa: <span className="font-bold text-primary">Sản</span></p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                 <div className="relative">

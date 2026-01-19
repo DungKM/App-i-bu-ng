@@ -55,9 +55,9 @@ export const Layout: React.FC = () => {
                     </div>
                 </div>
                 
-                <Link to="/surgery" className={`text-sm font-medium px-3 py-2 rounded-md transition whitespace-nowrap ${location.pathname.startsWith('/surgery') ? 'text-primary bg-primary/5' : 'text-slate-600 hover:text-slate-900'}`}>
+                {/* <Link to="/surgery" className={`text-sm font-medium px-3 py-2 rounded-md transition whitespace-nowrap ${location.pathname.startsWith('/surgery') ? 'text-primary bg-primary/5' : 'text-slate-600 hover:text-slate-900'}`}>
                     DVKT
-                </Link>
+                </Link> */}
                 <div className="relative group">
                     <button className={`text-sm font-medium px-3 py-2 rounded-md transition whitespace-nowrap flex items-center gap-1 ${location.pathname.startsWith('/medication') || location.pathname.startsWith('/rx') || location.pathname.startsWith('/compliance') ? 'text-primary bg-primary/5' : 'text-slate-600 hover:text-slate-900'}`}>
                         Cấp phát thuốc <i className="fa-solid fa-chevron-down text-[10px]"></i>
@@ -69,9 +69,9 @@ export const Layout: React.FC = () => {
                         <Link to="/medication" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary">
                             Cấp phát tại khoa (MAR)
                         </Link>
-                        <Link to="/medication/dashboard" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary">
+                        {/* <Link to="/medication/dashboard" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary">
                             Theo dõi cấp phát
-                        </Link>
+                        </Link> */}
                         <Link to="/compliance/dashboard" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary font-bold border-t border-slate-100">
                             <i className="fa-solid fa-tower-observation mr-2 text-slate-400"></i>Dashboard Tuân thủ
                         </Link>

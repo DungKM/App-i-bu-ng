@@ -112,7 +112,7 @@ export const MOCK_SURGERY_GROUPS: any[] = [
     status: SurgeryGroupStatus.NEW,
     indicationPerson: 'BS. Nguyễn Văn A',
     indicationDate: '2023-10-27T09:00:00',
-    indicationDept: 'Khoa Nội Tổng Hợp',
+    indicationDept: 'Khoa Sản',
     diagnosis: 'Viêm phổi cộng đồng / Theo dõi tràn dịch màng phổi',
     fulfillDeptCode: 'CDHA',
     orders: [
@@ -128,7 +128,7 @@ export const MOCK_SURGERY_GROUPS: any[] = [
     status: SurgeryGroupStatus.EXECUTING,
     indicationPerson: 'BS. Nguyễn Văn A',
     indicationDate: '2023-10-27T08:30:00',
-    indicationDept: 'Khoa Nội Tổng Hợp',
+    indicationDept: 'Khoa Sản',
     diagnosis: 'Sốt xuất huyết Dengue ngày 4 / Theo dõi xuất huyết nội tạng',
     fulfillDeptCode: 'CDHA',
     orders: [
@@ -148,7 +148,7 @@ export const MOCK_SURGERY_GROUPS: any[] = [
     status: SurgeryGroupStatus.RESULT,
     indicationPerson: 'BS. Lê Thị D',
     indicationDate: '2023-10-26T14:20:00',
-    indicationDept: 'Khoa Nội Tổng Hợp',
+    indicationDept: 'Khoa Sản',
     diagnosis: 'Suy tim NYHA III / Hẹp hở van 2 lá nặng',
     fulfillDeptCode: 'CDHA',
     orders: [
