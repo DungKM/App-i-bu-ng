@@ -1,11 +1,11 @@
 
-import { 
-  Patient, PatientStatus, UserRole, MedVisit, MedVisitStatus, 
-  WardStockItem, IssueNote, MARItem, MARStatus, ShiftType, 
-  TreatmentStatus, SurgeryGroupStatus, SurgeryOrderStatus, 
-  OrderType, OrderStatus, MedicalOrder, RxInboxItem, RxChangeType, 
-  StockTransaction, SyncQueueItem, SyncStatus, SyncType, 
-  ShiftStatus, ShiftSummary, ReasonCode, ComplianceStats 
+import {
+  Patient, PatientStatus, UserRole, MedVisit, MedVisitStatus,
+  WardStockItem, IssueNote, MARItem, MARStatus, ShiftType,
+  TreatmentStatus, SurgeryGroupStatus, SurgeryOrderStatus,
+  OrderType, OrderStatus, MedicalOrder, RxInboxItem, RxChangeType,
+  StockTransaction, SyncQueueItem, SyncStatus, SyncType,
+  ShiftStatus, ShiftSummary, ReasonCode, ComplianceStats
 } from '@/types';
 import { HisIssueStatus, IssueNoteStatus } from '../types';
 
@@ -24,23 +24,23 @@ export const MOCK_REASON_CODES: ReasonCode[] = [
 ];
 
 export const MOCK_PATIENTS: Patient[] = [
-  { 
-    id: 'p1', code: 'BN23001', name: 'PHẠM VĂN MINH', dob: '1985-05-15', gender: 'Nam', 
-    room: 'P401', bed: 'G01', diagnosis: 'Viêm phổi cộng đồng, ĐTĐ Type 2', 
+  {
+    id: 'p1', code: 'BN23001', name: 'PHẠM VĂN MINH', dob: '1985-05-15', gender: 'Nam',
+    room: 'P401', bed: 'G01', diagnosis: 'Viêm phổi cộng đồng, ĐTĐ Type 2',
     admissionDate: '2023-10-25', status: PatientStatus.STABLE, insurance: true,
     medicationToday: { total: 8, done: 3, overdue: 0, status: 'PENDING' },
     isSpecialCare: false
   },
-  { 
-    id: 'p2', code: 'BN23002', name: 'LÊ THỊ MAI', dob: '1992-08-20', gender: 'Nữ', 
-    room: 'P401', bed: 'G02', diagnosis: 'Sốt xuất huyết Dengue ngày 4', 
+  {
+    id: 'p2', code: 'BN23002', name: 'LÊ THỊ MAI', dob: '1992-08-20', gender: 'Nữ',
+    room: 'P401', bed: 'G02', diagnosis: 'Sốt xuất huyết Dengue ngày 4',
     admissionDate: '2023-10-26', status: PatientStatus.STABLE, insurance: true,
     medicationToday: { total: 5, done: 4, overdue: 0, status: 'PENDING' },
     isSpecialCare: false
   },
-  { 
-    id: 'p3', code: 'BN23003', name: 'NGUYỄN THỊ CÚC', dob: '1950-01-10', gender: 'Nữ', 
-    room: 'P402', bed: 'G01', diagnosis: 'Suy tim NYHA III, THA', 
+  {
+    id: 'p3', code: 'BN23003', name: 'NGUYỄN THỊ CÚC', dob: '1950-01-10', gender: 'Nữ',
+    room: 'P402', bed: 'G01', diagnosis: 'Suy tim NYHA III, THA',
     admissionDate: '2023-10-20', status: PatientStatus.CRITICAL, insurance: true,
     medicationToday: { total: 12, done: 4, overdue: 2, status: 'OVERDUE' },
     isSpecialCare: true
@@ -48,24 +48,24 @@ export const MOCK_PATIENTS: Patient[] = [
 ];
 
 export const MOCK_MED_VISITS: MedVisit[] = [
-    {
-        id: 'mv1', patientId: 'p1', patientName: 'PHẠM VĂN MINH', patientCode: 'BN23001', patientGender: 'Nam',
-        deptCode: 'NOI1', room: 'P401', bed: 'G01', admissionDate: '2023-10-25T08:00:00',
-        encounterCode: 'EC-231025-001', lastMedicationOrderAt: '2023-10-27 08:00',
-        status: MedVisitStatus.PARTIALLY_DISPENSED, treatmentStatus: TreatmentStatus.IN_PROGRESS, doctorName: 'BS. Nguyễn Văn A'
-    },
-    {
-        id: 'mv2', patientId: 'p2', patientName: 'LÊ THỊ MAI', patientCode: 'BN23002', patientGender: 'Nữ',
-        deptCode: 'NOI1', room: 'P401', bed: 'G02', admissionDate: '2023-10-26T09:30:00',
-        encounterCode: 'EC-231026-045', lastMedicationOrderAt: '2023-10-27 07:30',
-        status: MedVisitStatus.PARTIALLY_DISPENSED, treatmentStatus: TreatmentStatus.IN_PROGRESS, doctorName: 'BS. Nguyễn Văn A'
-    },
-    {
-        id: 'mv3', patientId: 'p3', patientName: 'NGUYỄN THỊ CÚC', patientCode: 'BN23003', patientGender: 'Nữ',
-        deptCode: 'NOI1', room: 'P402', bed: 'G01', admissionDate: '2023-10-20T14:00:00',
-        encounterCode: 'EC-231020-099', lastMedicationOrderAt: '2023-10-27 08:15',
-        status: MedVisitStatus.PARTIALLY_DISPENSED, treatmentStatus: TreatmentStatus.IN_PROGRESS, doctorName: 'BS. Lê Thị D'
-    }
+  {
+    id: 'mv1', patientId: 'p1', patientName: 'PHẠM VĂN MINH', patientCode: 'BN23001', patientGender: 'Nam',
+    deptCode: 'NOI1', room: 'P401', bed: 'G01', admissionDate: '2023-10-25T08:00:00',
+    encounterCode: 'EC-231025-001', lastMedicationOrderAt: '2023-10-27 08:00',
+    status: MedVisitStatus.PARTIALLY_DISPENSED, treatmentStatus: TreatmentStatus.IN_PROGRESS, doctorName: 'BS. Nguyễn Văn A'
+  },
+  {
+    id: 'mv2', patientId: 'p2', patientName: 'LÊ THỊ MAI', patientCode: 'BN23002', patientGender: 'Nữ',
+    deptCode: 'NOI1', room: 'P401', bed: 'G02', admissionDate: '2023-10-26T09:30:00',
+    encounterCode: 'EC-231026-045', lastMedicationOrderAt: '2023-10-27 07:30',
+    status: MedVisitStatus.PARTIALLY_DISPENSED, treatmentStatus: TreatmentStatus.IN_PROGRESS, doctorName: 'BS. Nguyễn Văn A'
+  },
+  {
+    id: 'mv3', patientId: 'p3', patientName: 'NGUYỄN THỊ CÚC', patientCode: 'BN23003', patientGender: 'Nữ',
+    deptCode: 'NOI1', room: 'P402', bed: 'G01', admissionDate: '2023-10-20T14:00:00',
+    encounterCode: 'EC-231020-099', lastMedicationOrderAt: '2023-10-27 08:15',
+    status: MedVisitStatus.PARTIALLY_DISPENSED, treatmentStatus: TreatmentStatus.IN_PROGRESS, doctorName: 'BS. Lê Thị D'
+  }
 ];
 
 export const MOCK_MAR: MARItem[] = [
@@ -132,11 +132,11 @@ export const MOCK_SURGERY_GROUPS: any[] = [
     diagnosis: 'Sốt xuất huyết Dengue ngày 4 / Theo dõi xuất huyết nội tạng',
     fulfillDeptCode: 'CDHA',
     orders: [
-      { 
-        id: 'ord-sg2-1', 
-        serviceName: 'Chụp CT-Scanner ổ bụng có thuốc cản quang', 
-        status: SurgeryOrderStatus.EXECUTING, 
-        obs: { conclusion: 'Đang tiến hành chụp tầng 2. Bệnh nhân hợp tác tốt.' } 
+      {
+        id: 'ord-sg2-1',
+        serviceName: 'Chụp CT-Scanner ổ bụng có thuốc cản quang',
+        status: SurgeryOrderStatus.EXECUTING,
+        obs: { conclusion: 'Đang tiến hành chụp tầng 2. Bệnh nhân hợp tác tốt.' }
       }
     ]
   },
@@ -152,15 +152,15 @@ export const MOCK_SURGERY_GROUPS: any[] = [
     diagnosis: 'Suy tim NYHA III / Hẹp hở van 2 lá nặng',
     fulfillDeptCode: 'CDHA',
     orders: [
-      { 
-        id: 'ord-sg3-1', 
-        serviceName: 'Siêu âm tim Doppler màu (Doppler tim)', 
-        status: SurgeryOrderStatus.RESULT, 
+      {
+        id: 'ord-sg3-1',
+        serviceName: 'Siêu âm tim Doppler màu (Doppler tim)',
+        status: SurgeryOrderStatus.RESULT,
         executionEndTime: '2023-10-26T15:45:00',
-        obs: { 
+        obs: {
           conclusion: 'Dãn buồng tim trái. Hở van 2 lá 3.5/4. EF: 42%. Có dịch màng ngoài tim lượng ít (5mm). Hở van 3 lá nhẹ, áp lực ĐMP không tăng.',
           patientSignature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-        } 
+        }
       }
     ]
   }
@@ -194,8 +194,8 @@ export let MOCK_RX_INBOX: RxInboxItem[] = [
     currentVersionId: 'v101',
     status: 'PENDING',
     alerts: [
-        { level: 'WARNING', message: 'Tương tác thuốc: Ciprofloxacin có thể tăng tác dụng của Theophylline (nếu dùng).' },
-        { level: 'CRITICAL', message: 'Dị ứng: BN có tiền sử dị ứng nhóm Quinolon (Cần xác nhận lại)' }
+      { level: 'WARNING', message: 'Tương tác thuốc: Ciprofloxacin có thể tăng tác dụng của Theophylline (nếu dùng).' },
+      { level: 'CRITICAL', message: 'Dị ứng: BN có tiền sử dị ứng nhóm Quinolon (Cần xác nhận lại)' }
     ],
     changes: [
       {
@@ -279,7 +279,7 @@ export let MOCK_FILES = [
   { id: 'f1', aggregateId: 't1', category: 'PHIEU_XET_NGHIEM', name: 'XN_Mau_2510.pdf', url: '#', extension: 'pdf', size: '1.2 MB', uploadDate: '2023-10-25T10:00:00Z', uploadedBy: 'u2' }
 ];
 export let MOCK_HISTORY = [
-    { id: 'h1', treatmentId: 't1', createdDate: '2023-10-25T08:00:00Z', type: 'TREATMENT', title: 'Nhập viện Nội trú', description: 'Chuyển từ Khoa Khám bệnh', deptName: 'Khoa Nội 1' }
+  { id: 'h1', treatmentId: 't1', createdDate: '2023-10-25T08:00:00Z', type: 'TREATMENT', title: 'Nhập viện Nội trú', description: 'Chuyển từ Khoa Khám bệnh', deptName: 'Khoa Nội 1' }
 ];
 export let MOCK_ISSUE_NOTES: IssueNote[] = [
   {

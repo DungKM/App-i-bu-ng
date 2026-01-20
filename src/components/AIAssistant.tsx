@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { aiService } from '@/services/ai';
-import { Patient, MedicalRecord, VitalSign, MedicalOrder, ProgressNote } from "@/src/types";
+import { Patient, MedicalRecord, VitalSign, MedicalOrder, ProgressNote } from "@/types";
 
 interface Props {
   patient: Patient;

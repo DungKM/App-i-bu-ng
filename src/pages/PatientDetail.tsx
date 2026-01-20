@@ -1,16 +1,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+
 import { api } from '@/services/api';
 import { aiService } from '@/services/ai';
-import { UserRole, OrderType, OrderStatus, PatientStatus, MedicalRecord, Attachment, VitalSign, NEWS2Result } from '@/types';
+import { PatientStatus, VitalSign, NEWS2Result } from '@/types';
 import { SignatureCapture } from '@/components/SignatureCapture';
 import { AIAssistant } from '@/components/AIAssistant';
-import { useAuth } from '@/context/AuthContext';
 
 // --- NEWS2 Logic ---
 const calculateNEWS2 = (v: VitalSign): NEWS2Result => {
@@ -62,44 +59,17 @@ const calculateNEWS2 = (v: VitalSign): NEWS2Result => {
     return { score, level, color, recommendation };
 };
 
-// --- Sparkline Component ---
-const Sparkline: React.FC<{ data: number[], color: string, min: number, max: number }> = ({ data, color, min, max }) => {
-    if (data.length < 2) return <div className="h-8 text-slate-300 text-[10px] flex items-center italic">Cần thêm dữ liệu...</div>;
-    const width = 100;
-    const height = 30;
-    const padding = 2;
-    const range = max - min || 1;
-    const points = data.slice(-10).map((val, i) => {
-        const x = (i / (Math.min(data.length, 10) - 1)) * width;
-        const normalized = (val - min) / range;
-        const y = height - (normalized * (height - 2 * padding) + padding);
-        return `${x},${y}`;
-    }).join(' ');
-
-    return (
-        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-            <polyline fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" points={points} />
-            <circle cx={width} cy={points.split(' ').pop()?.split(',')[1]} r="2" fill={color} />
-        </svg>
-    );
+const STATUS_STYLE: Record<string, { cls: string; dot: string }> = {
+    "Có kết quả": { cls: "text-green-600", dot: "bg-green-500" },
+    "Đang thực hiện": { cls: "text-blue-600", dot: "bg-blue-500" },
+    "Đã hủy": { cls: "text-slate-400 line-through", dot: "bg-slate-300" },
 };
-
-// --- Form Schemas ---
-const vitalSchema = z.object({
-    temperature: z.number().min(30).max(45),
-    heartRate: z.number().min(30).max(250),
-    spO2: z.number().min(50).max(100),
-    bpSystolic: z.number().min(50).max(300),
-    bpDiastolic: z.number().min(30).max(200),
-    respiratoryRate: z.number().min(5).max(60),
-});
 export const PatientDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [selectedEncounterId, setSelectedEncounterId] = useState<string>('enc-1');
     const [activeTab, setActiveTab] = useState<'record' | 'vitals' | 'meds' | 'services' | 'notes'>('record');
     const [showSignature, setShowSignature] = useState<{ orderId: string, type: 'MED' | 'SERVICE' } | null>(null);
-    const [editingRecord, setEditingRecord] = useState(false);
     const [aiSummary, setAiSummary] = useState<string | null>(null);
 
     const { data: patient, isLoading: pLoading } = useQuery({ queryKey: ['patient', id], queryFn: () => api.getPatientById(id!), enabled: !!id });
@@ -107,9 +77,6 @@ export const PatientDetail: React.FC = () => {
     const { data: vitals } = useQuery({ queryKey: ['vitals', id], queryFn: () => api.getVitals(id!), enabled: !!id });
     const { data: orders } = useQuery({ queryKey: ['orders', id], queryFn: () => api.getOrders(id!), enabled: !!id });
     const { data: notes } = useQuery({ queryKey: ['notes', id], queryFn: () => api.getNotes(id!), enabled: !!id });
-
-    // NEWS2 Calculation
-    const latestVitals = vitals?.[0];
 
     // AI Briefing
     useEffect(() => {
@@ -199,18 +166,18 @@ export const PatientDetail: React.FC = () => {
             {/* AI Clinical Briefing */}
             {/* {aiSummary && (
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-1 rounded-3xl shadow-xl mb-6">
-              <div className="bg-white/95 rounded-[22px] p-5 backdrop-blur-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-xs">
-                          <i className="fa-solid fa-wand-magic-sparkles"></i>
-                      </div>
-                      <h3 className="text-sm font-black text-indigo-900 uppercase tracking-wider">Tóm tắt lâm sàng AI</h3>
-                  </div>
-                  <div className="prose prose-sm max-w-none text-slate-700 font-medium leading-relaxed" 
-                       dangerouslySetInnerHTML={{ __html: aiSummary.replace(/\n/g, '<br/>').replace(/• /g, '✨ ') }} />
-              </div>
-          </div>
-      )} */}
+                    <div className="bg-white/95 rounded-[22px] p-5 backdrop-blur-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-xs">
+                                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                            </div>
+                            <h3 className="text-sm font-black text-indigo-900 uppercase tracking-wider">Tóm tắt lâm sàng AI</h3>
+                        </div>
+                        <div className="prose prose-sm max-w-none text-slate-700 font-medium leading-relaxed" 
+                            dangerouslySetInnerHTML={{ __html: aiSummary.replace(/\n/g, '<br/>').replace(/• /g, '✨ ') }} />
+                    </div>
+                </div>
+            )} */}
 
             {/* Main Tabs */}
             <div className="flex overflow-x-auto gap-1 mb-8 border-b border-slate-200 pb-1 scrollbar-hide">
@@ -220,6 +187,8 @@ export const PatientDetail: React.FC = () => {
                     { id: 'meds', label: 'Dùng thuốc', icon: 'fa-pills' },
                     { id: 'vitals', label: 'Sinh hiệu', icon: 'fa-heart-pulse' },
                     { id: 'notes', label: 'Diễn biến', icon: 'fa-clipboard-user' },
+                    { id: 'documents', label: 'Tài liệu', icon: 'fa-book' },
+                    { id: 'history', label: 'Lịch sử', icon: 'fa-briefcase' },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -234,84 +203,134 @@ export const PatientDetail: React.FC = () => {
                     </button>
                 ))}
             </div>
+            {activeTab !== "record" && activeTab !== "history" && activeTab !== "documents" && (
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 mb-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lần khám có chỉ định CLS/DVKT</div>
+                            <div className="text-slate-900 font-black mt-1">Chọn lần khám để xem chỉ định</div>
+                        </div>
+
+                        {/* Filter (view only) */}
+                        <div className="flex items-center gap-2">
+                            <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2">
+                                <i className="fa-solid fa-filter text-slate-400 text-xs"></i>
+                                <select className="bg-transparent text-xs font-black text-slate-700 outline-none">
+                                    <option>Tất cả loại</option>
+                                    <option>LAB</option>
+                                    <option>CĐHA</option>
+                                    <option>DVKT</option>
+                                </select>
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <select className="bg-transparent text-xs font-black text-slate-700 outline-none">
+                                    <option>Tất cả trạng thái</option>
+                                    <option>Chờ thực hiện</option>
+                                    <option>Đang thực hiện</option>
+                                    <option>Có kết quả</option>
+                                    <option>Đã hủy</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Chips lần khám */}
+                    <div className="mt-5 flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                        {(
+                            [
+                                { id: 'enc-1', code: '3/26DT000000006', date: '09:51 10/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Cấp cứu' },
+                                { id: 'enc-2', code: '2/26DT000000005', date: '09:46 10/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Cấp cứu' },
+                                { id: 'enc-3', code: '1/26PK000000006', date: '10:19 07/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Sản' },
+                            ] as const
+                        ).map((e, idx) => (
+                            <button
+                                key={e.id}
+                                onClick={() => setSelectedEncounterId(e.id)}
+                                className={[
+                                    "min-w-[260px] md:min-w-[300px] rounded-3xl border p-5 text-left transition-all",
+                                    selectedEncounterId === e.id
+                                        ? "bg-blue-600 border-blue-600 text-white shadow-lg"
+                                        : "bg-white border-slate-200 hover:bg-slate-50"
+                                ].join(' ')}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm font-black">
+                                        {e.code}
+                                    </div>
+                                    <div className={selectedEncounterId === e.id ? "text-white/80" : "text-slate-400"}>
+                                        <i className="fa-solid fa-circle text-[8px]"></i>
+                                    </div>
+                                </div>
+
+                                <div className={["mt-2 text-xs font-bold", selectedEncounterId === e.id ? "text-white/90" : "text-slate-600"].join(' ')}>
+                                    <i className="fa-regular fa-clock mr-2"></i>{e.date}
+                                </div>
+
+                                <div className={["mt-1 text-xs font-bold", selectedEncounterId === e.id ? "text-white/90" : "text-slate-600"].join(' ')}>
+                                    <i className="fa-solid fa-user-doctor mr-2"></i>{e.doctor}
+                                </div>
+
+                                <div className={["mt-2 text-[10px] font-black uppercase tracking-widest", selectedEncounterId === e.id ? "text-white/70" : "text-slate-400"].join(' ')}>
+                                    {e.dept}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )
+            }
+            {/* TAB CONTENT: VITALS WITH TRENDS */}
+            {activeTab === 'vitals' && (
+                <div className="space-y-6">
+                    {vitalsByEncounter.length === 0 ? (
+                        <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm text-center text-slate-400 font-bold">
+                            Chưa có dữ liệu sinh hiệu.
+                        </div>
+                    ) : (
+                        vitalsByEncounter.map((g) => (
+                            <div key={g.encounterId} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                {/* Bảng sinh hiệu của lần khám đó */}
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-white border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Thời gian</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Mạch</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">HA</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">SpO2</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Điểm NEWS2</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {g.items.map((v: any) => {
+                                            const vScore = calculateNEWS2(v);
+                                            return (
+                                                <tr key={v.id} className="hover:bg-slate-50 transition">
+                                                    <td className="px-6 py-4 font-mono font-bold text-slate-500">
+                                                        {new Date(v.timestamp).toLocaleString('vi-VN')}
+                                                    </td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.heartRate}</td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">
+                                                        {v.bpSystolic}/{v.bpDiastolic}
+                                                    </td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.spO2}%</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`${vScore.color} text-white px-2 py-0.5 rounded-lg text-[10px] font-black shadow-sm`}>
+                                                            {vScore.score} - {vScore.level}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
             {/* TAB CONTENT: CLS/DVKT */}
             {activeTab === 'services' && (
                 <div className="space-y-6">
                     {/* LẦN KHÁM (selector) */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lần khám có chỉ định CLS/DVKT</div>
-                                <div className="text-slate-900 font-black mt-1">Chọn lần khám để xem chỉ định</div>
-                            </div>
-
-                            {/* Filter (view only) */}
-                            <div className="flex items-center gap-2">
-                                <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2">
-                                    <i className="fa-solid fa-filter text-slate-400 text-xs"></i>
-                                    <select className="bg-transparent text-xs font-black text-slate-700 outline-none">
-                                        <option>Tất cả loại</option>
-                                        <option>LAB</option>
-                                        <option>CĐHA</option>
-                                        <option>DVKT</option>
-                                    </select>
-                                    <div className="w-px h-4 bg-slate-200 mx-1" />
-                                    <select className="bg-transparent text-xs font-black text-slate-700 outline-none">
-                                        <option>Tất cả trạng thái</option>
-                                        <option>Chờ thực hiện</option>
-                                        <option>Đang thực hiện</option>
-                                        <option>Có kết quả</option>
-                                        <option>Đã hủy</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Chips lần khám */}
-                        <div className="mt-5 flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                            {(
-                                // ✅ UI demo: nếu bạn đã có data “encounters có CLS”, thay bằng mảng đó
-                                [
-                                    { id: 'enc-1', code: '3/26DT000000006', date: '09:51 10/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Cấp cứu' },
-                                    { id: 'enc-2', code: '2/26DT000000005', date: '09:46 10/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Cấp cứu' },
-                                    { id: 'enc-3', code: '1/26PK000000006', date: '10:19 07/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Sản' },
-                                ] as const
-                            ).map((e, idx) => (
-                                <button
-                                    key={e.id}
-                                    onClick={() => setSelectedEncounterId(e.id)}
-                                    className={[
-                                        "min-w-[260px] md:min-w-[300px] rounded-3xl border p-5 text-left transition-all",
-                                        selectedEncounterId === e.id
-                                            ? "bg-blue-600 border-blue-600 text-white shadow-lg"
-                                            : "bg-white border-slate-200 hover:bg-slate-50"
-                                    ].join(' ')}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-sm font-black">
-                                            {e.code}
-                                        </div>
-                                        <div className={selectedEncounterId === e.id ? "text-white/80" : "text-slate-400"}>
-                                            <i className="fa-solid fa-circle text-[8px]"></i>
-                                        </div>
-                                    </div>
-
-                                    <div className={["mt-2 text-xs font-bold", selectedEncounterId === e.id ? "text-white/90" : "text-slate-600"].join(' ')}>
-                                        <i className="fa-regular fa-clock mr-2"></i>{e.date}
-                                    </div>
-
-                                    <div className={["mt-1 text-xs font-bold", selectedEncounterId === e.id ? "text-white/90" : "text-slate-600"].join(' ')}>
-                                        <i className="fa-solid fa-user-doctor mr-2"></i>{e.doctor}
-                                    </div>
-
-                                    <div className={["mt-2 text-[10px] font-black uppercase tracking-widest", selectedEncounterId === e.id ? "text-white/70" : "text-slate-400"].join(' ')}>
-                                        {e.dept}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
                     {/* DANH SÁCH CLS/DVKT */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -319,7 +338,6 @@ export const PatientDetail: React.FC = () => {
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh sách chỉ định CLS/DVKT</div>
                                 <div className="text-slate-900 font-black mt-1">Hiển thị theo lần khám đã chọn</div>
                             </div>
-
                             {/* Search (view only) */}
                             <div className="flex items-center gap-2">
                                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 w-full md:w-[360px]">
@@ -331,7 +349,6 @@ export const PatientDetail: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-
                         {/* List items */}
                         <div className="mt-5 space-y-3">
                             {(
@@ -342,15 +359,7 @@ export const PatientDetail: React.FC = () => {
                                     { id: 's3', tag: 'DVKT', title: 'Siêu âm ổ bụng', doctor: 'BS. Nguyễn Văn A', time: '16/01/2026 14:35', status: 'Có kết quả' },
                                 ] as const
                             ).map((it) => {
-                                const status =
-                                    it.status === 'Có kết quả'
-                                        ? { cls: 'text-green-600', dot: 'bg-green-500' }
-                                        : it.status === 'Đang thực hiện'
-                                            ? { cls: 'text-blue-600', dot: 'bg-blue-500' }
-                                            : it.status === 'Đã hủy'
-                                                ? { cls: 'text-slate-400 line-through', dot: 'bg-slate-300' }
-                                                : { cls: 'text-slate-400', dot: 'bg-slate-300' };
-
+                                const status = STATUS_STYLE[it.status] ?? { cls: "text-slate-400", dot: "bg-slate-300" };
                                 const tagTone =
                                     it.tag === 'LAB'
                                         ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
@@ -448,57 +457,12 @@ export const PatientDetail: React.FC = () => {
                                     status: "Đang dùng",
                                 },
                             ],
-                        },
-                        {
-                            encounterId: "enc-20260107-001",
-                            encounterCode: "1/26PK000000006",
-                            createdAt: "2026-01-07T10:19:00+07:00",
-                            doctorName: "BS. Nguyễn Văn A",
-                            meds: [
-                                {
-                                    id: "m-004",
-                                    drugName: "Amoxicillin/Clavulanate 875/125mg",
-                                    dose: "1 viên",
-                                    route: "Uống",
-                                    frequency: "2 lần/ngày",
-                                    note: "Sau ăn",
-                                    status: "Đã ngưng",
-                                },
-                                {
-                                    id: "m-005",
-                                    drugName: "Vitamin C 500mg",
-                                    dose: "1 viên",
-                                    route: "Uống",
-                                    frequency: "1 lần/ngày",
-                                    note: "",
-                                    status: "Hoàn thành",
-                                },
-                            ],
-                        },
+                        }
                     ].map((enc) => (
                         <div
                             key={enc.encounterId}
                             className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"
                         >
-                            {/* Header lần khám */}
-                            <div className="px-6 py-5 bg-slate-50 border-b border-slate-200">
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                    <div className="font-black text-slate-900">
-                                        Lần khám: <span className="font-mono">{enc.encounterCode}</span>
-                                    </div>
-                                    <div className="text-sm text-slate-600 font-bold flex flex-wrap gap-x-4 gap-y-1">
-                                        <span className="inline-flex items-center gap-2">
-                                            <i className="fa-regular fa-clock text-slate-400"></i>
-                                            {new Date(enc.createdAt).toLocaleString("vi-VN")}
-                                        </span>
-                                        <span className="inline-flex items-center gap-2">
-                                            <i className="fa-solid fa-user-doctor text-slate-400"></i>
-                                            {enc.doctorName}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Danh sách thuốc */}
                             <div className="p-6 space-y-3">
                                 {enc.meds.map((m) => {
@@ -567,74 +531,6 @@ export const PatientDetail: React.FC = () => {
                     ))}
                 </div>
             )}
-            {/* TAB CONTENT: VITALS WITH TRENDS */}
-            {activeTab === 'vitals' && (
-                <div className="space-y-6">
-                    {vitalsByEncounter.length === 0 ? (
-                        <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm text-center text-slate-400 font-bold">
-                            Chưa có dữ liệu sinh hiệu.
-                        </div>
-                    ) : (
-                        vitalsByEncounter.map((g) => (
-                            <div key={g.encounterId} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                                {/* Header mỗi bảng = 1 lần khám */}
-                                <div className="px-6 py-5 bg-slate-50 border-b border-slate-200">
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                        <div className="font-black text-slate-900">
-                                            Lần khám: <span className="font-mono">26PK00000011</span>
-                                        </div>
-                                        <div className="text-sm text-slate-600 font-bold flex flex-wrap gap-x-4 gap-y-1">
-                                            <span className="inline-flex items-center gap-2">
-                                                <i className="fa-regular fa-clock text-slate-400"></i>
-                                                11:00 10/01/2026
-                                            </span>
-                                            <span className="inline-flex items-center gap-2">
-                                                <i className="fa-solid fa-user-doctor text-slate-400"></i>
-                                                Hoàng Anh Dũng
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bảng sinh hiệu của lần khám đó */}
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-white border-b border-slate-200">
-                                        <tr>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Thời gian</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Mạch</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">HA</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">SpO2</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Điểm NEWS2</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {g.items.map((v: any) => {
-                                            const vScore = calculateNEWS2(v);
-                                            return (
-                                                <tr key={v.id} className="hover:bg-slate-50 transition">
-                                                    <td className="px-6 py-4 font-mono font-bold text-slate-500">
-                                                        {new Date(v.timestamp).toLocaleString('vi-VN')}
-                                                    </td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.heartRate}</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">
-                                                        {v.bpSystolic}/{v.bpDiastolic}
-                                                    </td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.spO2}%</td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`${vScore.color} text-white px-2 py-0.5 rounded-lg text-[10px] font-black shadow-sm`}>
-                                                            {vScore.score} - {vScore.level}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ))
-                    )}
-                </div>
-            )}
             {/* OTHER TABS (Placeholder/Existing) */}
             {activeTab === 'record' && (
                 <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
@@ -644,15 +540,23 @@ export const PatientDetail: React.FC = () => {
                             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.reasonForAdmission || '--'}</div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Diễn biến bệnh</label>
+                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử bệnh bản thân</label>
+                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử bệnh gia đình</label>
                             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
                         </div>
                         <div className="md:col-span-2 space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Khám lâm sàng</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chẩn đoán</label>
                             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100 whitespace-pre-wrap">{record?.clinicalExamination || '--'}</div>
                         </div>
                         <div className="md:col-span-2 space-y-2">
-                            <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Hướng điều trị / Kết luận</label>
+                            <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Hướng điều trị</label>
                             <div className="bg-blue-50 p-6 rounded-3xl text-slate-900 font-black border border-blue-100 text-lg leading-relaxed">{record?.treatmentPlan || '--'}</div>
                         </div>
                     </div>
@@ -699,25 +603,6 @@ export const PatientDetail: React.FC = () => {
                             key={enc.encounterId}
                             className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"
                         >
-                            {/* Header lần khám */}
-                            <div className="px-6 py-5 bg-slate-50 border-b border-slate-200">
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                    <div className="font-black text-slate-900">
-                                        Lần khám: <span className="font-mono">{enc.encounterCode}</span>
-                                    </div>
-                                    <div className="text-sm text-slate-600 font-bold flex flex-wrap gap-x-4 gap-y-1">
-                                        <span className="inline-flex items-center gap-2">
-                                            <i className="fa-regular fa-clock text-slate-400"></i>
-                                            {new Date(enc.createdAt).toLocaleString("vi-VN")}
-                                        </span>
-                                        <span className="inline-flex items-center gap-2">
-                                            <i className="fa-solid fa-user-doctor text-slate-400"></i>
-                                            {enc.doctorName}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Timeline diễn biến */}
                             <div className="p-6">
                                 <div className="space-y-4">
@@ -769,6 +654,108 @@ export const PatientDetail: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+            {/* OTHER TABS Documents */}
+            {activeTab === "documents" && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-[500px]">
+                        {/* LEFT */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto p-4 max-h-[200px] md:max-h-full">
+                            <h3 className="font-bold text-slate-800 mb-4 text-sm uppercase">
+                                Danh mục hồ sơ
+                            </h3>
+
+                            <ul className="space-y-2">
+                                <li>
+                                    <div className="font-bold text-slate-700 text-sm mb-1">Hồ sơ bệnh án</div>
+                                    <ul className="pl-4 border-l-2 border-slate-100 space-y-1">
+                                        <li className="text-sm cursor-pointer px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
+                                            <i className="fa-regular fa-folder mr-2" />
+                                            Bệnh án nội trú
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <div className="font-bold text-slate-700 text-sm mb-1">Giấy tờ hành chính</div>
+                                    <ul className="pl-4 border-l-2 border-slate-100 space-y-1">
+                                        <li className="text-sm cursor-pointer px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
+                                            <i className="fa-regular fa-folder mr-2" />
+                                            Thẻ BHYT
+                                        </li>
+
+                                        {/* active item */}
+                                        <li className="text-sm cursor-pointer px-2 py-1 rounded hover:bg-slate-50 bg-blue-50 text-primary font-medium">
+                                            <i className="fa-regular fa-folder mr-2" />
+                                            CCCD
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* RIGHT */}
+                        <div className="md:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col min-h-[300px]">
+                            {/* Header */}
+                            <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                                <div>
+                                    <div className="text-xs text-slate-500 mb-0.5">Danh mục đang chọn</div>
+                                    <h3 className="font-bold text-slate-800 truncate max-w-[200px] sm:max-w-none">
+                                        CCCD
+                                    </h3>
+                                </div>
+
+                                <label className="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer hover:bg-sky-600 transition flex items-center whitespace-nowrap">
+                                    <i className="fa-solid fa-camera mr-2" />
+                                    <span className="hidden sm:inline">Upload File</span>
+                                    <input type="file" className="hidden" />
+                                </label>
+                            </div>
+
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex flex-shrink-0 items-center justify-center">
+                                                <i className="fa-solid fa-file-pdf" />
+                                            </div>
+
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-slate-800 truncate">
+                                                    XN_Mau_2510.pdf
+                                                </p>
+                                                <p className="text-[10px] text-slate-400">10/25/2023 • 1.2 MB</p>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" className="text-slate-400 hover:text-primary px-2">
+                                            <i className="fa-solid fa-download" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* OTHER TABS history */}
+            {activeTab === 'history' && (
+                <div className="space-y-6">
+                    <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-6">Lịch sử khám chữa bệnh</h3>
+                        <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
+                            <div className="relative pl-8">
+                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white bg-blue-500"></div>
+                                <div className="text-xs text-slate-400 mb-1">25/10/2023</div>
+                                <h4 className="font-bold text-slate-800 text-base">Nhập viện Nội trú</h4>
+                                <p className="text-sm text-slate-600 mt-1">Chuyển từ Khoa Khám bệnh</p>
+                                <span className="inline-block mt-2 text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-medium">Khoa Nội 1</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

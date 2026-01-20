@@ -33,3 +33,12 @@
     }
   ]
 }
+
+{
+  "LyDoVaoVien": "Sinh con",
+  "DienBienBenh": "Bình thường",
+  "TienSuBenhBanThan": "Không có tiền sử bệnh bản thân",
+  "TienSuBenhGiaDinh": "Không có tiền sử bệnh gia đình",
+  "ChanDoan": "Thai kỳ bình thường",
+  "HuongDieuTri": "Theo dõi và chăm sóc sau sinh"
+}

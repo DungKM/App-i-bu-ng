@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MedicationDeliveryProof } from '@/src/types';
 import { SignatureCapture } from './SignatureCapture';
+import { MedicationDeliveryProof } from '@/types';
 
 interface Props {
   patientName: string;

@@ -42,14 +42,14 @@ function lazyNamed<T extends React.ComponentType<any>>(
 
 // Optimized Query Client
 const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 1000 * 60, // Data stays fresh for 1 minute (reduces fetching)
-            gcTime: 1000 * 60 * 10, // Cache garbage collection after 10 mins
-            refetchOnWindowFocus: false, // Don't refetch on window focus
-            retry: 1 // Only retry once
-        }
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // Data stays fresh for 1 minute (reduces fetching)
+      gcTime: 1000 * 60 * 10, // Cache garbage collection after 10 mins
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      retry: 1 // Only retry once
     }
+  }
 });
 
 // Fixed ErrorBoundary to properly resolve inherited React.Component properties in TypeScript
@@ -84,16 +84,16 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const ProtectedRoute = () => {
-    const { user, isLoading } = useAuth();
-    if (isLoading) return <div className="h-screen flex items-center justify-center"><i className="fa-solid fa-circle-notch fa-spin text-primary text-3xl"></i></div>;
-    if (!user) return <Navigate to="/login" replace />;
-    return <Outlet />;
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><i className="fa-solid fa-circle-notch fa-spin text-primary text-3xl"></i></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Outlet />;
 };
 
 const LoadingSpinner = () => (
-    <div className="h-full w-full flex items-center justify-center py-20">
-        <i className="fa-solid fa-circle-notch fa-spin text-primary text-3xl"></i>
-    </div>
+  <div className="h-full w-full flex items-center justify-center py-20">
+    <i className="fa-solid fa-circle-notch fa-spin text-primary text-3xl"></i>
+  </div>
 );
 
 const App: React.FC = () => {
@@ -102,41 +102,41 @@ const App: React.FC = () => {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <HashRouter>
-              <Suspense fallback={<LoadingSpinner />}>
-                  <Routes>
-                      <Route path="/login" element={<LoginPage />} />
-                      
-                      <Route element={<ProtectedRoute />}>
-                          <Route element={<Layout />}>
-                              {/* Default Home: Patient List */}
-                              <Route path="/" element={<Navigate to="/patients" replace />} />
-                              <Route path="/patients" element={<PatientList />} />
-                              <Route path="/patient/:id" element={<PatientDetail />} />
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
 
-                              {/* Module: Treatment (Đi buồng) */}
-                              <Route path="/treatment" element={<TreatmentList />} />
-                              <Route path="/treatment/:id" element={<TreatmentDetail />} />
-                              
-                              {/* Module: Surgery (DVKT) */}
-                              <Route path="/surgery" element={<SurgeryList />} />
-                              <Route path="/surgery/:groupId" element={<SurgeryDetail />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<Layout />}>
+                    {/* Default Home: Patient List */}
+                    <Route path="/" element={<Navigate to="/patients" replace />} />
+                    <Route path="/patients" element={<PatientList />} />
+                    <Route path="/patient/:id" element={<PatientDetail />} />
+                    
+                    {/* Module: Treatment (Đi buồng) */}
+                    <Route path="/treatment" element={<TreatmentList />} />
+                    <Route path="/treatment/:id" element={<TreatmentDetail />} />
 
-                              {/* Module: Medication (Dược) */}
-                              <Route path="/rx/inbox" element={<RxInbox />} />
-                              <Route path="/medication" element={<MedicationList />} />
-                              <Route path="/medication/dashboard" element={<MedicationDashboard />} />
-                              <Route path="/medication/ward-stock" element={<WardStock />} />
-                              <Route path="/medication/:visitId" element={<MedicationDetail />} />
-                              <Route path="/compliance/dashboard" element={<ComplianceDashboard />} />
+                    {/* Module: Surgery (DVKT) */}
+                    <Route path="/surgery" element={<SurgeryList />} />
+                    <Route path="/surgery/:groupId" element={<SurgeryDetail />} />
 
-                              {/* Module: Rounds, Profile & System */}
-                              <Route path="/rounds/dashboard" element={<RoundDashboard />} />
-                              <Route path="/profile" element={<UserProfile />} />
-                              <Route path="/sync/dashboard" element={<SyncDashboard />} />
-                          </Route>
-                      </Route>
-                  </Routes>
-              </Suspense>
+                    {/* Module: Medication (Dược) */}
+                    <Route path="/rx/inbox" element={<RxInbox />} />
+                    <Route path="/medication" element={<MedicationList />} />
+                    <Route path="/medication/dashboard" element={<MedicationDashboard />} />
+                    <Route path="/medication/ward-stock" element={<WardStock />} />
+                    <Route path="/medication/:visitId" element={<MedicationDetail />} />
+                    <Route path="/compliance/dashboard" element={<ComplianceDashboard />} />
+
+                    {/* Module: Rounds, Profile & System */}
+                    <Route path="/rounds/dashboard" element={<RoundDashboard />} />
+                    <Route path="/profile" element={<UserProfile />} />
+                    <Route path="/sync/dashboard" element={<SyncDashboard />} />
+                  </Route>
+                </Route>
+              </Routes>
+            </Suspense>
           </HashRouter>
         </AuthProvider>
       </QueryClientProvider>
