@@ -2,21 +2,19 @@
   "TenKhoa": "Khoa sản",
   "ThoiGian":"16/01/2026",
   "ThongKeGiuong": {
-    "tonggiuong": 28,
-    "tongbenhnhan": 7,
-    "tongphong": 4,
-    "tonggiuongtheoyeucau": 8
+  "TongGiuong": 28,
+  "TongBenhNhan": 7,
+  "TongPhong": 4,
+  "TongGiuongTheoYeuCau": 8
   },
   "DSPhong": [
     {
      "Ma": "P201",
-     "MaBH": "P201",
      "SoGiuong": 0.0,
      "SoBenhNhan": 2.0,
      "DsGiuong": [
         {
-          "Ma": "H001",
-          "MaBH": "H001",
+          "MaGiuong": "H001",
           "isTyc": false,
           "DsBenhAn": {
             "IdBenhAn": "5299dd07-d082-407d-932c-1b590d3d604e",
@@ -26,8 +24,11 @@
             "age": 41
           },
           "lieudung": { 
-              "tongthuocdung": 10,
-              "solieudadung": 9
+              "TongSoLuongSang": 3,
+              "TongSoLuongTrua": 3,
+              "TongSoLuongChieu": 4,
+              "TongSoLuongToi": 2,
+              "TongThuocDung": 12
            }
         }]
     }
@@ -42,3 +43,157 @@
   "ChanDoan": "Thai kỳ bình thường",
   "HuongDieuTri": "Theo dõi và chăm sóc sau sinh"
 }
+
+[
+  {
+    "Id": "592766f9-625e-4eb9-bb1c-a1860eca44e4",
+    "Ma": "26DT00000019",
+    "TenBacSiKham": "Lê Thị Phương Thảo",
+    "NgayThucKham": "2026-01-16T08:30:00",
+    "TenKhoaKham": "Khoa Cấp cứu",
+  }
+]
+[
+  {
+    "TenDVKT": "Định lượng Urê máu [Máu]",
+    "TenBacSiChiDinh": "Nguyễn Văn A",
+    "NgayChiDinh": "2026-01-15T10:00:00",
+    "TrangThai": "Đã hoàn thành"
+  }
+]
+
+[
+  {
+  "MaDonThuoc": "1638487",
+  "HSDonThuoc" :
+   [
+    {
+      "IdPhieuThuoc": "2220e1b7-1441-42f4-a5ac-fe4f0ff0d862",
+      "IdPhieuKham": "a6b70abd-d38b-442b-b08f-ab0b0dfae5dc",
+      "IdBenhAn": "717370b6-b7ce-49fb-b1d7-24bff13c4f1b",
+      "Ten": "Paracetamol 500mg",
+      "SoLuong": 20, 
+      "SoLuongHuy": 10,
+      "DonVi": "viên",
+      "NgayKeThuoc": "2026-01-15T09:00:00",
+      "TenBacSiKeThuoc": "Trần Thị B",
+      "GhiChuLieuDung": [{"ThoiGianSang":"8h","ThoiGianTrua":"12h","ThoiGianChieu":"17h","ThoiGianToi":"20h","SoNgayKe":1,"CachDung":"Uống"}],
+      "LieuDung": "Uống 1 viên x 4 lần/ngày trong 1 ngày",
+      "TrangThai": "Đã dùng thuốc/ Đã huỷ thuốc/ Chờ dùng thuốc"
+    },
+  ]
+  }
+]
+
+[
+  {
+    "IdPhieuKham": "a6b70abd-d38b-442b-b08f-ab0b0dfae5dc",
+    "IdBenhAn": "717370b6-b7ce-49fb-b1d7-24bff13c4f1b",
+    "Mach": 88,
+    "NhietDo": 37.5,
+    "HuyetApToiThieu": 130,
+    "HuyetApToiDa": 	85,
+    "NhipTho": 20,
+    "SPO2": 98,
+    "CanNang": 62.00,
+    "ChieuCao": 168.00,
+    "BMI": 22,
+  }
+]
+
+[
+  {
+    "IdPhieuKham": "a6b70abd-d38b-442b-b08f-ab0b0dfae5dc",
+    "IdBenhAn": "717370b6-b7ce-49fb-b1d7-24bff13c4f1b",
+    "DienBienBenh": 88,
+    "NhietDo": 37.5,
+    "HuyetApToiThieu": 130,
+    "HuyetApToiDa": 	85,
+    "NhipTho": 20,
+    "SPO2": 98,
+    "CanNang": 62.00,
+    "ChieuCao": 168.00,
+    "BMI": 22,
+  }
+]
+
+[
+  {
+    "IdPhieuKham": "a6b70abd-d38b-442b-b08f-ab0b0dfae5dc",
+    "IdBenhAn": "717370b6-b7ce-49fb-b1d7-24bff13c4f1b",
+    "DienBienBenh": "sốt giảm, đau giảm. Tiếp tục kháng sinh theo phác đồ. Chỉ định thêm X-quang phổi, theo dõi CRP.",
+    "BacSiKham": "Trần Thị B",
+    "NgayThucKham": "2026-01-16T08:30:00",
+  }
+]
+
+[
+  {
+    "IdPhieuKham": "a6b70abd-d38b-442b-b08f-ab0b0dfae5dc",
+    "IdBenhAn": "717370b6-b7ce-49fb-b1d7-24bff13c4f1b",
+    "DienBienBenh": "sốt giảm, đau giảm. Tiếp tục kháng sinh theo phác đồ. Chỉ định thêm X-quang phổi, theo dõi CRP.",
+    "BacSiKham": "Trần Thị B",
+    "NgayThucKham": "2026-01-16T08:30:00",
+  }
+]
+[
+  {
+    "IdPhieuKham": "a6b70abd-d38b-442b-b08f-ab0b0dfae5dc",
+    "IdBenhAn": "717370b6-b7ce-49fb-b1d7-24bff13c4f1b",
+    "TenDVKT": "Xét Nghiệm Sinh Hóa Máu - Xét nghiệm sinh hóa KT thực hiện",
+    "URL": "/Content/Upload//2026/01/22/26DT00005660_20260122102517188.pdf",
+  }
+]
+{
+  "ChuyenKhoa": [
+    {
+      "KhoaHienTai": "Khoa Khám bệnh",
+      "NgayChuyenKhoa": "2023-10-25T00:00:00",
+      "KhoaChuyenDen": "Khoa Nội"
+    },
+    {
+      "KhoaHienTai": "Khoa Khám bệnh",
+      "NgayChuyenKhoa": "2023-09-25T00:00:00",
+      "KhoaChuyenDen": "Khoa Sản"
+    }
+  ],
+  "ChuyenBuong": [
+    {
+      "PhongHienTai": "401",
+      "GiuongHienTai": "201",
+      "NgayChuyenBuong": "2023-09-25T00:00:00",
+      "PhongChuyenDen": "402",
+      "GiuongChuyenDen": "302"
+    }
+  ]
+}
+
+
+[
+  {
+    "TenBenhNhan": "Nguyễn Văn A",
+    "MaBenhNhan": "BN23001",
+    "NgayKeThuoc": "2026-01-15T09:00:00",
+    "DsDonThuoc": [
+      {
+        "MaThuoc": "TH001",
+        "TenThuoc": "Paracetamol 500mg",
+        "SoLuong": 20,
+        "DonVi": "viên",
+      }
+    ]
+  },
+  {
+    "TenBenhNhan": "Nguyễn Văn B",
+    "MaBenhNhan": "BN23002",
+    "NgayKeThuoc": "2026-01-15T09:00:00",
+    "DsDonThuoc": [
+      {
+        "MaThuoc": "TH001",
+        "TenThuoc": "Paracetamol 500mg",
+        "SoLuong": 20,
+        "DonVi": "viên",
+      }
+    ]
+  }
+]

@@ -134,10 +134,11 @@ export const RxInbox: React.FC = () => {
 
                             {/* DIFF HEADER */}
                             <div className="hidden md:grid grid-cols-12 gap-4 mb-2 px-4 text-xs font-bold text-slate-500 uppercase">
-                                <div className="col-span-1">Loại</div>
-                                <div className="col-span-4">Tên thuốc / Hàm lượng</div>
-                                <div className="col-span-3">Hiện tại (Cũ)</div>
-                                <div className="col-span-3">Mới (HIS)</div>
+
+                                <div className="col-span-3">Mã</div>
+                                <div className="col-span-3">Tên thuốc</div>
+                                <div className="col-span-3">Đơn vị</div>
+                                <div className="col-span-3">Số lượng</div>
                             </div>
 
                             <div className="space-y-4">
@@ -147,24 +148,15 @@ export const RxInbox: React.FC = () => {
                                         <div key={change.id} className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all relative ${acks[change.id] ? 'border-green-400 ring-1 ring-green-100' : 'border-slate-200 hover:border-blue-300'}`}>
                                             <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
                                                 {/* Status Badge */}
-                                                <div className="md:col-span-1">
-                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold border whitespace-nowrap ${badge.class}`}>
-                                                        {badge.label}
+                                                <div className="md:col-span-3">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold border`}>
+                                                        {change.Ma}
                                                     </span>
                                                 </div>
 
                                                 {/* Drug Name & Alerts */}
-                                                <div className="md:col-span-4">
+                                                <div className="md:col-span-3">
                                                     <div className="font-bold text-slate-900 text-lg md:text-base">{change.drugName}</div>
-
-                                                    {/* VALIDATION ERRORS */}
-                                                    {change.validationErrors && change.validationErrors.length > 0 && (
-                                                        <div className="mt-2 text-red-600 text-xs font-bold bg-red-50 p-2 rounded border border-red-100">
-                                                            <i className="fa-solid fa-circle-xmark mr-1"></i>
-                                                            {change.validationErrors.join(', ')}
-                                                        </div>
-                                                    )}
-
                                                     {/* MAR CONFLICTS */}
                                                     {change.conflicts && change.conflicts.length > 0 && (
                                                         <div className="mt-2 text-amber-700 text-xs font-bold bg-amber-50 p-2 rounded border border-amber-100">
@@ -180,7 +172,6 @@ export const RxInbox: React.FC = () => {
                                                     {change.oldData ? (
                                                         <div className={`text-sm ${change.type === RxChangeType.STOP ? 'line-through opacity-50 decoration-slate-400' : 'text-slate-600'}`}>
                                                             <div className="font-medium">{change.oldData.dosage}</div>
-                                                            <div>{change.oldData.route} • {change.oldData.frequency}</div>
                                                         </div>
                                                     ) : (
                                                         <div className="text-sm text-slate-300 italic">-- Không có --</div>
@@ -189,7 +180,6 @@ export const RxInbox: React.FC = () => {
 
                                                 {/* New Data */}
                                                 <div className="md:col-span-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100 md:bg-transparent md:border-0 md:p-0">
-                                                    <div className="md:hidden text-[10px] uppercase font-bold text-primary mb-1">Mới (HIS)</div>
                                                     {change.newData ? (
                                                         <div className="text-sm text-slate-800">
                                                             {/* Highlight Diff Logic */}
@@ -197,19 +187,10 @@ export const RxInbox: React.FC = () => {
                                                                 {change.newData.dosage}
                                                             </div>
                                                             <div className="mt-1 flex flex-wrap gap-2">
-                                                                <span className={change.oldData && change.oldData.route !== change.newData.route ? 'text-blue-700 bg-blue-100 px-1 rounded font-bold' : ''}>
-                                                                    {change.newData.route}
-                                                                </span>
-                                                                <span className="text-slate-300 hidden md:inline">•</span>
                                                                 <span className={change.oldData && change.oldData.frequency !== change.newData.frequency ? 'text-blue-700 bg-blue-100 px-1 rounded' : ''}>
                                                                     {change.newData.frequency}
                                                                 </span>
                                                             </div>
-                                                            {change.newData.note && (
-                                                                <div className="mt-2 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 italic">
-                                                                    <i className="fa-regular fa-note-sticky mr-1"></i>{change.newData.note}
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     ) : (
                                                         <div className="text-sm text-red-600 font-bold italic">Ngưng dùng thuốc này</div>

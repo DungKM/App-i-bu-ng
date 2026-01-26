@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
-  const NGROK_HOST = 'd68d074dfd63.ngrok-free.app';
+  const NGROK_HOST = '1e43d8c9ec3f.ngrok-free.app';
 
   return {
     define: {

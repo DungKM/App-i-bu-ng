@@ -15,6 +15,7 @@ export interface RxInboxItem {
   patientCode: string;
   hisVersionId: string;
   hisTimestamp: string;
+  Ma: string;
   currentVersionId: string;
   changes: RxChangeDetail[];
   status: 'PENDING' | 'APPLIED' | 'REJECTED'; 

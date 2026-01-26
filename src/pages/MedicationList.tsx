@@ -186,7 +186,7 @@ export const MedicationList: React.FC = () => {
             />
           </div>
 
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <button
               onClick={() => setShowCloseModal(true)}
               className={`px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg flex items-center gap-2 transition-all active:scale-95 whitespace-nowrap ${isClosed ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-primary text-white hover:bg-sky-600 shadow-primary/20'}`}
@@ -196,7 +196,7 @@ export const MedicationList: React.FC = () => {
             <Link to="/medication/ward-stock" className="bg-white border border-slate-200 text-slate-500 px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-sm hover:bg-slate-50 hover:text-primary transition flex items-center gap-2">
               <i className="fa-solid fa-box-archive"></i> Tủ trực
             </Link>
-          </div>
+          </div> */}
         </div>
       </div>
 

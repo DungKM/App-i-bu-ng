@@ -292,11 +292,15 @@ export const PatientDetail: React.FC = () => {
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-white border-b border-slate-200">
                                         <tr>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Thời gian</th>
                                             <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Mạch</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">HA</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Nhiệt độ</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Huyết áp tối đa</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Huyết áp tối thiểu</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Nhịp thở</th>
                                             <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">SpO2</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Điểm NEWS2</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Cân nặng</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Chiều cao</th>
+                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">BMI</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -304,19 +308,15 @@ export const PatientDetail: React.FC = () => {
                                             const vScore = calculateNEWS2(v);
                                             return (
                                                 <tr key={v.id} className="hover:bg-slate-50 transition">
-                                                    <td className="px-6 py-4 font-mono font-bold text-slate-500">
-                                                        {new Date(v.timestamp).toLocaleString('vi-VN')}
-                                                    </td>
                                                     <td className="px-6 py-4 font-black text-slate-700">{v.heartRate}</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">
-                                                        {v.bpSystolic}/{v.bpDiastolic}
-                                                    </td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.temperature}°C</td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.bpSystolic}</td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.bpDiastolic}</td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.respiratoryRate}</td>
                                                     <td className="px-6 py-4 font-black text-slate-700">{v.spO2}%</td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`${vScore.color} text-white px-2 py-0.5 rounded-lg text-[10px] font-black shadow-sm`}>
-                                                            {vScore.score} - {vScore.level}
-                                                        </span>
-                                                    </td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.weightKg} kg</td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.heightCm} cm</td>
+                                                    <td className="px-6 py-4 font-black text-slate-700">{v.bmi}</td>
                                                 </tr>
                                             );
                                         })}
@@ -436,7 +436,7 @@ export const PatientDetail: React.FC = () => {
                                     route: "TM",
                                     frequency: "1 lần/ngày",
                                     note: "Pha theo hướng dẫn",
-                                    status: "Đang dùng",
+                                    status: "Chờ dùng thuốc",
                                 },
                                 {
                                     id: "m-002",
@@ -445,7 +445,7 @@ export const PatientDetail: React.FC = () => {
                                     route: "Uống",
                                     frequency: "Khi sốt > 38.5°C",
                                     note: "Tối đa 4g/ngày",
-                                    status: "PRN",
+                                    status: "Đã hủy thuốc",
                                 },
                                 {
                                     id: "m-003",
@@ -454,7 +454,7 @@ export const PatientDetail: React.FC = () => {
                                     route: "Uống",
                                     frequency: "Sáng",
                                     note: "",
-                                    status: "Đang dùng",
+                                    status: "Đã dùng thuốc",
                                 },
                             ],
                         }
@@ -467,11 +467,11 @@ export const PatientDetail: React.FC = () => {
                             <div className="p-6 space-y-3">
                                 {enc.meds.map((m) => {
                                     const tone =
-                                        m.status === "Đang dùng"
+                                        m.status === "Đã dùng thuốc"
                                             ? "bg-green-50 border-green-100 text-green-700"
-                                            : m.status === "Đã ngưng"
+                                            : m.status === "Đã hủy thuốc"
                                                 ? "bg-slate-50 border-slate-200 text-slate-500"
-                                                : m.status === "Hoàn thành"
+                                                : m.status === "Chờ dùng thuốc"
                                                     ? "bg-blue-50 border-blue-100 text-blue-700"
                                                     : "bg-amber-50 border-amber-100 text-amber-700";
 
@@ -672,23 +672,15 @@ export const PatientDetail: React.FC = () => {
                                     <ul className="pl-4 border-l-2 border-slate-100 space-y-1">
                                         <li className="text-sm cursor-pointer px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
                                             <i className="fa-regular fa-folder mr-2" />
-                                            Bệnh án nội trú
+                                            Xét Nghiệm Sinh Hóa Máu - Xét nghiệm sinh hóa KT thực hiện
                                         </li>
-                                    </ul>
-                                </li>
-
-                                <li>
-                                    <div className="font-bold text-slate-700 text-sm mb-1">Giấy tờ hành chính</div>
-                                    <ul className="pl-4 border-l-2 border-slate-100 space-y-1">
                                         <li className="text-sm cursor-pointer px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
                                             <i className="fa-regular fa-folder mr-2" />
-                                            Thẻ BHYT
+                                            Chụp Xquang ngực thẳng [số hóa 1 phim]
                                         </li>
-
-                                        {/* active item */}
                                         <li className="text-sm cursor-pointer px-2 py-1 rounded hover:bg-slate-50 bg-blue-50 text-primary font-medium">
                                             <i className="fa-regular fa-folder mr-2" />
-                                            CCCD
+                                            Phiếu vào viện
                                         </li>
                                     </ul>
                                 </li>
@@ -702,7 +694,7 @@ export const PatientDetail: React.FC = () => {
                                 <div>
                                     <div className="text-xs text-slate-500 mb-0.5">Danh mục đang chọn</div>
                                     <h3 className="font-bold text-slate-800 truncate max-w-[200px] sm:max-w-none">
-                                        CCCD
+                                        Phiếu vào viện
                                     </h3>
                                 </div>
 
@@ -745,14 +737,22 @@ export const PatientDetail: React.FC = () => {
             {activeTab === 'history' && (
                 <div className="space-y-6">
                     <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="font-bold text-slate-800 mb-6">Lịch sử khám chữa bệnh</h3>
+                        <h3 className="font-bold text-slate-800 mb-6">Lịch sử chuyển khoa</h3>
                         <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
                             <div className="relative pl-8">
                                 <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white bg-blue-500"></div>
                                 <div className="text-xs text-slate-400 mb-1">25/10/2023</div>
-                                <h4 className="font-bold text-slate-800 text-base">Nhập viện Nội trú</h4>
-                                <p className="text-sm text-slate-600 mt-1">Chuyển từ Khoa Khám bệnh</p>
-                                <span className="inline-block mt-2 text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-medium">Khoa Nội 1</span>
+                                <h4 className="font-bold text-slate-800 text-base">Chuyển khoa phòng</h4>
+                                <p className="text-sm text-slate-600 mt-1">Chuyển từ Khoa Khám bệnh sang khoa nội</p>
+                            </div>
+                        </div>
+                         <h3 className="font-bold text-slate-800 mb-6 mt-6">Lịch sử chuyển buồng</h3>
+                        <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
+                            <div className="relative pl-8">
+                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white bg-blue-500"></div>
+                                <div className="text-xs text-slate-400 mb-1">25/09/2023</div>
+                                <h4 className="font-bold text-slate-800 text-base">Chuyển buồng</h4>
+                                <p className="text-sm text-slate-600 mt-1">Chuyển từ phòng 401/ giường 201 sang phòng 402/ giường 302</p>
                             </div>
                         </div>
                     </div>

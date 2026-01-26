@@ -202,27 +202,30 @@ export let MOCK_RX_INBOX: RxInboxItem[] = [
         id: 'c1',
         orderId: 'new_1',
         type: RxChangeType.ADD,
+        Ma: "V_1766_26",
         drugName: 'Ciprofloxacin 500mg',
-        newData: { dosage: '1 chai', route: 'Tiêm TM', frequency: 'Sáng-Chiều' },
+        oldData: { dosage: '1 viên' },
+        newData: { dosage: '1'},
         validationErrors: []
       },
       {
         id: 'c2',
         orderId: 'mo1', // Matches existing ID
         type: RxChangeType.UPDATE,
+        Ma: "V_1766_24",
         drugName: 'Paracetamol 500mg',
-        oldData: { dosage: '1 viên', route: 'Uống', frequency: '3 lần/ngày' },
-        newData: { dosage: '2 viên', route: 'Uống', frequency: '3 lần/ngày', note: 'Đau nhiều thì uống' },
+        oldData: { dosage: '1 viên' },
+        newData: { dosage: '2' },
         validationErrors: []
       },
       {
         id: 'c3',
         orderId: 'mo2',
         type: RxChangeType.STOP,
+        Ma: "V_1766_26",
         drugName: 'Augmentin 1g',
-        oldData: { dosage: '1 viên', route: 'Uống', frequency: '2 lần/ngày' },
-        newData: undefined,
-        conflicts: ['Còn 2 liều đang treo (Scheduled) trong MAR', '1 liều đã soạn (Prepared) cần trả kho'],
+        oldData: { dosage: '1 viên' },
+        newData: { dosage: '2' },
         validationErrors: []
       }
     ]
@@ -240,9 +243,9 @@ export let MOCK_RX_INBOX: RxInboxItem[] = [
         id: 'c4',
         orderId: 'new_2',
         type: RxChangeType.ADD,
+        Ma: "V_1766_26",
         drugName: 'Huyết tương tươi đông lạnh',
         newData: { dosage: '250ml', route: '', frequency: 'Truyền TM' },
-        validationErrors: ['Thiếu đường dùng - Vui lòng kiểm tra lại HIS']
       }
     ]
   }
@@ -260,10 +263,39 @@ export let MOCK_RECORD_PAGES = {
     conclusion: { dischargeDate: '', dischargeDiagnosis: '', treatmentResult: '', dischargeAdvice: '' }
   }
 };
-export let MOCK_VITALS = [
-  { id: 'v1', patientId: 'p1', timestamp: new Date().toISOString(), temperature: 37.5, heartRate: 88, spO2: 98, bpSystolic: 130, bpDiastolic: 85, respiratoryRate: 20, creatorId: 'u2' },
-  { id: 'v2', patientId: 'p3', timestamp: new Date(Date.now() - 7200000).toISOString(), temperature: 36.8, heartRate: 92, spO2: 96, bpSystolic: 150, bpDiastolic: 95, respiratoryRate: 22, creatorId: 'u2' }
+export const MOCK_VITALS = [
+  {
+    id: "v1",
+    patientId: "p1",
+    timestamp: new Date().toISOString(),
+    heartRate: 88,            // Mạch
+    temperature: 37.5,        // Nhiệt độ
+    bpSystolic: 130,          // Huyết áp tối đa
+    bpDiastolic: 85,          // Huyết áp tối thiểu
+    respiratoryRate: 20,      // Nhịp thở
+    spO2: 98,                 // SpO2
+    weightKg: 62,             // Cân nặng
+    heightCm: 168,            // Chiều cao
+    bmi: 22.0,                // BMI
+    creatorId: "u2",
+  },
+  {
+    id: "v2",
+    patientId: "p3",
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
+    heartRate: 92,
+    temperature: 36.8,
+    bpSystolic: 150,
+    bpDiastolic: 95,
+    respiratoryRate: 22,
+    spO2: 96,
+    weightKg: 78,
+    heightCm: 172,
+    bmi: 26.4,
+    creatorId: "u2",
+  },
 ];
+
 export let MOCK_NOTES = [
   { id: 'n1', patientId: 'p1', timestamp: new Date(Date.now() - 7200000).toISOString(), content: 'Bệnh nhân tỉnh, tiếp xúc tốt, còn ho khan ít.', authorId: 'u1', authorName: 'BS. Nguyễn Văn A' },
   { id: 'n2', patientId: 'p3', timestamp: new Date(Date.now() - 7200000).toISOString(), content: 'Đường huyết mao mạch lúc 10h: 15.5 mmol/l. Đã xử trí tiêm Insulin nhanh 4UI.', authorId: 'u2', authorName: 'ĐD. Trần Thị B' }
