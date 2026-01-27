@@ -1,74 +1,68 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/src/types';
-import { api } from '@/services/api';
+import React, { createContext, useContext, useMemo, useState } from "react";
+import { authApi, authStorage } from "@/services/auth.api";
+import type { AuthUser, Role } from "@/types/auth";
 
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: (username: string) => Promise<boolean>;
-  logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
-}
+type AuthContextValue = {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const USERNAME_KEY = "username";
+const ID_BENH_AN_KEY = "idBenhAn";
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const AuthContext = createContext<AuthContextValue | null>(null);
 
-  // Check localStorage on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('mediround_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse stored user", e);
-        localStorage.removeItem('mediround_user');
-      }
-    }
-    setIsLoading(false);
-  }, []);
+export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const role = authStorage.getRole();
+    const access = authStorage.getAccessToken();
+    const username = localStorage.getItem(USERNAME_KEY);
+    const idBenhAn = localStorage.getItem(ID_BENH_AN_KEY);
+    return access && role && username
+      ? { username, role, idBenhAn: idBenhAn || null }
+      : null;
+  });
 
-  const login = async (username: string) => {
-    try {
-      const userData = await api.login(username);
-      if (userData) {
-        setUser(userData);
-        localStorage.setItem('mediround_user', JSON.stringify(userData));
+  const isAuthenticated = !!authStorage.getAccessToken();
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isAuthenticated,
+
+      login: async (username, password) => {
+        const res = await authApi.login(username, password);
+        localStorage.setItem(USERNAME_KEY, username);
+        if (res?.idBenhAn !== undefined) {
+          localStorage.setItem(ID_BENH_AN_KEY, res.idBenhAn ?? "");
+        }
+
+        setUser({
+          username: res.username || username,
+          role: res.role as Role,
+          idBenhAn: res.idBenhAn ?? null,
+        });
+
         return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Login failed", error);
-      return false;
-    }
-  };
+      },
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('mediround_user');
-  };
-
-  const updateUser = (userData: Partial<User>) => {
-      if (user) {
-          const newUser = { ...user, ...userData };
-          setUser(newUser);
-          localStorage.setItem('mediround_user', JSON.stringify(newUser));
-      }
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
-      {children}
-    </AuthContext.Provider>
+      logout: async () => {
+        await authApi.logout();
+        localStorage.removeItem(USERNAME_KEY);
+        localStorage.removeItem(ID_BENH_AN_KEY);
+        setUser(null);
+      },
+    }),
+    [user, isAuthenticated]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };

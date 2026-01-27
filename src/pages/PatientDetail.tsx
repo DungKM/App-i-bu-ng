@@ -151,9 +151,6 @@ export const PatientDetail: React.FC = () => {
                         <div>
                             <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
                                 {patient.name}
-                                <span className={`text-xs px-2 py-1 rounded-lg border font-black ${patient.status === PatientStatus.CRITICAL ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-green-50 border-green-200 text-green-600'}`}>
-                                    {patient.status === PatientStatus.CRITICAL ? 'BỆNH NẶNG' : 'ỔN ĐỊNH'}
-                                </span>
                             </h1>
                             <div className="text-sm text-slate-500 font-medium flex gap-4 mt-1">
                                 <span>Mã BN: <span className="text-slate-900 font-bold">{patient.code}</span></span>

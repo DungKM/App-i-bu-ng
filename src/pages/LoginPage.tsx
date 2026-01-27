@@ -16,25 +16,14 @@ export const LoginPage: React.FC = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+        setError("");
         setIsSubmitting(true);
 
         try {
-            // Mock check: Password must be '123'
-            if (password !== '123') {
-                setError('Sai mật khẩu');
-                setIsSubmitting(false);
-                return;
-            }
-
-            const success = await login(username);
-            if (success) {
-                navigate(from, { replace: true });
-            } else {
-                setError('Tên đăng nhập không tồn tại');
-            }
-        } catch (err) {
-            setError('Đã có lỗi xảy ra');
+            await login(username, password);         
+            navigate(from, { replace: true });
+        } catch (err: any) {
+            setError(err?.message || "Đăng nhập thất bại");
         } finally {
             setIsSubmitting(false);
         }
@@ -103,14 +92,6 @@ export const LoginPage: React.FC = () => {
                             )}
                         </button>
                     </form>
-
-                    <div className="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-400">
-                        <p className="font-semibold mb-2">Tài khoản Demo:</p>
-                        <div className="flex justify-center gap-4">
-                            <span className="bg-slate-50 px-2 py-1 rounded border">doctor / 123</span>
-                            <span className="bg-slate-50 px-2 py-1 rounded border">nurse / 123</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
