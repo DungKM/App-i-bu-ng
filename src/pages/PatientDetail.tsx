@@ -8,6 +8,7 @@ import { aiService } from '@/services/ai';
 import { PatientStatus, VitalSign, NEWS2Result } from '@/types';
 import { SignatureCapture } from '@/components/SignatureCapture';
 import { AIAssistant } from '@/components/AIAssistant';
+import ThongTinVaoVienCard from '@/components/ThongTinVaoVienCard';
 
 // --- NEWS2 Logic ---
 const calculateNEWS2 = (v: VitalSign): NEWS2Result => {
@@ -77,7 +78,7 @@ export const PatientDetail: React.FC = () => {
     const { data: vitals } = useQuery({ queryKey: ['vitals', id], queryFn: () => api.getVitals(id!), enabled: !!id });
     const { data: orders } = useQuery({ queryKey: ['orders', id], queryFn: () => api.getOrders(id!), enabled: !!id });
     const { data: notes } = useQuery({ queryKey: ['notes', id], queryFn: () => api.getNotes(id!), enabled: !!id });
-
+    const IdBenhAn ='F3BB64E8-8FEC-44BE-AB96-23867F53894A'
     // AI Briefing
     useEffect(() => {
         if (patient && record && vitals) {
@@ -132,7 +133,7 @@ export const PatientDetail: React.FC = () => {
     //   });
 
     if (pLoading) return <div className="text-center py-20"><i className="fa-solid fa-circle-notch fa-spin text-3xl text-primary"></i></div>;
-    if (!patient) return <div className="text-center py-20">Không tìm thấy BN</div>;
+
 
     return (
         <div className="pb-20 relative">
@@ -533,34 +534,35 @@ export const PatientDetail: React.FC = () => {
             )}
             {/* OTHER TABS (Placeholder/Existing) */}
             {activeTab === 'record' && (
-                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lý do vào viện</label>
-                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.reasonForAdmission || '--'}</div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Diễn biến bệnh</label>
-                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử bệnh bản thân</label>
-                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử bệnh gia đình</label>
-                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
-                        </div>
-                        <div className="md:col-span-2 space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chẩn đoán</label>
-                            <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100 whitespace-pre-wrap">{record?.clinicalExamination || '--'}</div>
-                        </div>
-                        <div className="md:col-span-2 space-y-2">
-                            <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Hướng điều trị</label>
-                            <div className="bg-blue-50 p-6 rounded-3xl text-slate-900 font-black border border-blue-100 text-lg leading-relaxed">{record?.treatmentPlan || '--'}</div>
-                        </div>
-                    </div>
-                </div>
+                // <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
+                //     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                //         <div className="space-y-2">
+                //             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lý do vào viện</label>
+                //             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.reasonForAdmission || '--'}</div>
+                //         </div>
+                //         <div className="space-y-2">
+                //             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Diễn biến bệnh</label>
+                //             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
+                //         </div>
+                //         <div className="space-y-2">
+                //             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử bệnh bản thân</label>
+                //             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
+                //         </div>
+                //         <div className="space-y-2">
+                //             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tiền sử bệnh gia đình</label>
+                //             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100">{record?.medicalHistory || '--'}</div>
+                //         </div>
+                //         <div className="md:col-span-2 space-y-2">
+                //             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chẩn đoán</label>
+                //             <div className="bg-slate-50 p-4 rounded-2xl text-slate-900 font-bold border border-slate-100 whitespace-pre-wrap">{record?.clinicalExamination || '--'}</div>
+                //         </div>
+                //         <div className="md:col-span-2 space-y-2">
+                //             <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Hướng điều trị</label>
+                //             <div className="bg-blue-50 p-6 rounded-3xl text-slate-900 font-black border border-blue-100 text-lg leading-relaxed">{record?.treatmentPlan || '--'}</div>
+                //         </div>
+                //     </div>
+                // </div>
+                <ThongTinVaoVienCard idBenhAn={IdBenhAn} />
             )}
             {/* OTHER TABS Notes */}
             {activeTab === 'notes' && (
