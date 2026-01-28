@@ -4,12 +4,12 @@ export type LoginResponse = {
   accessToken: string;
   refreshToken: string;
   role: Role;
-  username?: string;   // optional nếu backend chưa trả
-  idBenhAn?: string | null;
+  username?: string;  
+  idKhoa?: string | null;
 };
 
 export type AuthUser = {
   username: string;
   role: Role;
-  idBenhAn?: string | null;
+  idKhoa?: string | null;
 };

@@ -10,7 +10,7 @@ type AuthContextValue = {
 };
 
 const USERNAME_KEY = "username";
-const ID_BENH_AN_KEY = "idBenhAn";
+const ID_KHOA_KEY = "idKhoa";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -19,9 +19,9 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const role = authStorage.getRole();
     const access = authStorage.getAccessToken();
     const username = localStorage.getItem(USERNAME_KEY);
-    const idBenhAn = localStorage.getItem(ID_BENH_AN_KEY);
+    const idKhoa = localStorage.getItem(ID_KHOA_KEY);
     return access && role && username
-      ? { username, role, idBenhAn: idBenhAn || null }
+      ? { username, role, idKhoa: idKhoa || null }
       : null;
   });
 
@@ -35,14 +35,14 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       login: async (username, password) => {
         const res = await authApi.login(username, password);
         localStorage.setItem(USERNAME_KEY, username);
-        if (res?.idBenhAn !== undefined) {
-          localStorage.setItem(ID_BENH_AN_KEY, res.idBenhAn ?? "");
+        if (res?.idKhoa !== undefined) {
+          localStorage.setItem(ID_KHOA_KEY, res.idKhoa ?? "");
         }
 
         setUser({
           username: res.username || username,
           role: res.role as Role,
-          idBenhAn: res.idBenhAn ?? null,
+          idKhoa: res.idKhoa ?? null,
         });
 
         return true;
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       logout: async () => {
         await authApi.logout();
         localStorage.removeItem(USERNAME_KEY);
-        localStorage.removeItem(ID_BENH_AN_KEY);
+        localStorage.removeItem(ID_KHOA_KEY);
         setUser(null);
       },
     }),

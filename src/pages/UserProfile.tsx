@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/services/api';
-
+import avatar from "@/assets/avatar.jpg";
 interface ProfileForm {
     name: string;
     avatar: string;
@@ -51,7 +51,7 @@ export const UserProfile: React.FC = () => {
                  <div className="flex flex-col md:flex-row gap-8">
                      <div className="flex flex-col items-center gap-4">
                          <div className="w-32 h-32 rounded-full border-4 border-slate-100 overflow-hidden shadow-sm">
-                             <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                             <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
                          </div>
                          <div className="text-center">
                              <p className="font-bold text-lg text-slate-800">{user.name}</p>
@@ -70,17 +70,6 @@ export const UserProfile: React.FC = () => {
                              />
                              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                          </div>
-
-                         <div>
-                             <label className="block text-sm font-bold text-slate-700 mb-1">Link Avatar (URL)</label>
-                             <input 
-                                {...register('avatar')}
-                                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none transition" 
-                                placeholder="https://..."
-                             />
-                             <p className="text-xs text-slate-400 mt-1">Dán đường dẫn ảnh để thay đổi avatar.</p>
-                         </div>
-
                          <div className="pt-4 border-t border-slate-100">
                              <h4 className="font-bold text-slate-700 mb-3"><i className="fa-solid fa-lock mr-2"></i>Đổi mật khẩu</h4>
                              <div>

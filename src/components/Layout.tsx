@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { UserRole, SyncStatus, SyncQueueItem } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
+import avatar from "@/assets/avatar.jpg";
 
 export const Layout: React.FC = () => {
   const location = useLocation();
@@ -118,7 +119,7 @@ export const Layout: React.FC = () => {
                 </p>
               </div>
               <img
-                src={user.avatar}
+                src={avatar}
                 alt="Avatar"
                 className="w-8 h-8 rounded-full border border-slate-200 group-hover:border-primary transition object-cover bg-slate-100"
               />
