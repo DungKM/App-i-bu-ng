@@ -1,24 +1,6 @@
 import React from "react";
 import BedCard from "./BedCard";
-
-type Patient = { id: string | number };
-
-type Bed = {
-  code: string;
-  patient?: Patient | null;
-};
-
-type Room = {
-  room: string;
-  beds: Bed[];
-};
-
-type RoomGridProps = {
-  filteredWard: Room[];
-  searchTerm?: string;
-  onBedClick: (patientId: Patient["id"]) => void;
-  className?: string;
-};
+import type { Room, RoomGridProps, BedClickPayload } from "@/types/dibuong";
 
 export const RoomGrid: React.FC<RoomGridProps> = ({
   filteredWard,
@@ -43,12 +25,16 @@ export const RoomGrid: React.FC<RoomGridProps> = ({
 type RoomSectionProps = {
   room: Room;
   searchTerm?: string;
-  onBedClick: (patientId: Patient["id"]) => void;
+  onBedClick: (payload: BedClickPayload) => void;
 };
 
 const RoomSection: React.FC<RoomSectionProps> = ({ room, searchTerm, onBedClick }) => {
   const occupiedInRoom = room.beds.filter((b) => b.patient).length;
   if (occupiedInRoom === 0 && searchTerm) return null;
+
+  const roomLabel = room.room.startsWith("Phòng")
+    ? room.room.replace(/^Phòng\s*/i, "").trim()
+    : room.room;
 
   return (
     <section className="space-y-6">
@@ -59,7 +45,7 @@ const RoomSection: React.FC<RoomSectionProps> = ({ room, searchTerm, onBedClick 
 
         <div className="flex-1">
           <h3 className="font-black text-2xl text-slate-800 uppercase tracking-tighter">
-            Phòng {room.room}
+            Phòng {roomLabel}
           </h3>
           <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">
             <span>
@@ -77,7 +63,17 @@ const RoomSection: React.FC<RoomSectionProps> = ({ room, searchTerm, onBedClick 
             key={`${room.room}-${bed.code}-${idx}`}
             bedCode={bed.code}
             patient={bed.patient}
-            onClick={() => bed.patient && onBedClick(bed.patient.id)}
+            onClick={() => {
+              // Guard giường trống
+              console.log(bed.patient);
+              if (!bed.patient?.id) return;
+
+              onBedClick({
+                idBenhAn: bed.patient.id,
+                maBenhNhan: bed.patient.code,
+                tenBenhNhan: bed.patient.name,
+              });
+            }}
           />
         ))}
       </div>

@@ -1,33 +1,13 @@
 import React from "react";
 import MedicationStatsSmall from "./MedicationStatsSmall";
+import { BedCardProps } from "@/types/dibuong";
 
-export type MedicationToday = {
-  total: number;
-  done: number;
-  overdue: number;
-};
-
-export type Patient = {
-  id?: string | number;
-  name: string;
-  code: string;
-  gender: string;
-  dob: string; // "YYYY-MM-DD"
-  medicationToday?: MedicationToday;
-};
-
-export type BedCardProps = {
-  bedCode: string;
-  patient?: Patient | null;
-  onClick?: () => void;
-};
 
 const BedCard: React.FC<BedCardProps> = ({ bedCode, patient, onClick }) => {
   const isOccupied = !!patient;
 
   const getStatusClasses = () => {
     if (!isOccupied) return "bg-slate-50 border-dashed border-slate-300 opacity-90 cursor-default";
-
     const stats = patient?.medicationToday;
     if (!stats || stats.total === 0) return "bg-white border-slate-200 shadow-sm";
     if (stats.overdue > 0) return "bg-red-50 border-red-300 ring-4 ring-red-100";
@@ -51,11 +31,10 @@ const BedCard: React.FC<BedCardProps> = ({ bedCode, patient, onClick }) => {
     >
       <div className="flex justify-between items-start">
         <span
-          className={`text-[10px] font-black px-2.5 py-1 rounded-xl shadow-sm ${
-            isOccupied
+          className={`text-[10px] font-black px-2.5 py-1 rounded-xl shadow-sm ${isOccupied
               ? "bg-white text-primary border border-primary/10"
               : "bg-slate-50 text-slate-300"
-          }`}
+            }`}
         >
           {bedCode}
         </span>

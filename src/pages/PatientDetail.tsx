@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { api } from '@/services/api';
@@ -9,6 +9,9 @@ import { PatientStatus, VitalSign, NEWS2Result } from '@/types';
 import { SignatureCapture } from '@/components/SignatureCapture';
 import { AIAssistant } from '@/components/AIAssistant';
 import ThongTinVaoVienCard from '@/components/ThongTinVaoVienCard';
+import { EncounterList } from '@/components/EncounterList';
+import { VitalsTable } from '@/components/VitalsTable';
+import { DvktList } from '@/components/DvktList';
 
 // --- NEWS2 Logic ---
 const calculateNEWS2 = (v: VitalSign): NEWS2Result => {
@@ -67,8 +70,15 @@ const STATUS_STYLE: Record<string, { cls: string; dot: string }> = {
 };
 export const PatientDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const { search } = useLocation();
+
+    const qs = new URLSearchParams(search);
+    const maBenhNhan = qs.get("maBenhNhan") ?? "";
+    const tenBenhNhan = qs.get("tenBenhNhan") ?? "";
+
+    const IdBenhAn = id ?? "";
     const navigate = useNavigate();
-    const [selectedEncounterId, setSelectedEncounterId] = useState<string>('enc-1');
+    const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'record' | 'vitals' | 'meds' | 'services' | 'notes'>('record');
     const [showSignature, setShowSignature] = useState<{ orderId: string, type: 'MED' | 'SERVICE' } | null>(null);
     const [aiSummary, setAiSummary] = useState<string | null>(null);
@@ -78,7 +88,7 @@ export const PatientDetail: React.FC = () => {
     const { data: vitals } = useQuery({ queryKey: ['vitals', id], queryFn: () => api.getVitals(id!), enabled: !!id });
     const { data: orders } = useQuery({ queryKey: ['orders', id], queryFn: () => api.getOrders(id!), enabled: !!id });
     const { data: notes } = useQuery({ queryKey: ['notes', id], queryFn: () => api.getNotes(id!), enabled: !!id });
-    const IdBenhAn ='F3BB64E8-8FEC-44BE-AB96-23867F53894A'
+
     // AI Briefing
     useEffect(() => {
         if (patient && record && vitals) {
@@ -137,7 +147,7 @@ export const PatientDetail: React.FC = () => {
 
     return (
         <div className="pb-20 relative">
-            <AIAssistant patient={patient} record={record} vitals={vitals} orders={orders} notes={notes} />
+            {/* <AIAssistant patient={patient} record={record} vitals={vitals} orders={orders} notes={notes} /> */}
 
             {showSignature && <SignatureCapture title="Xác nhận" onSave={() => setShowSignature(null)} onCancel={() => setShowSignature(null)} />}
 
@@ -150,11 +160,11 @@ export const PatientDetail: React.FC = () => {
                         </button>
                         <div>
                             <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-                                {patient.name}
+                                {tenBenhNhan}
                             </h1>
                             <div className="text-sm text-slate-500 font-medium flex gap-4 mt-1">
-                                <span>Mã BN: <span className="text-slate-900 font-bold">{patient.code}</span></span>
-                                <span>Phòng: <span className="text-slate-900 font-bold">{patient.room}-{patient.bed}</span></span>
+                                <span>Mã BN: <span className="text-slate-900 font-bold">{maBenhNhan}</span></span>
+                                {/* <span>Phòng: <span className="text-slate-900 font-bold">{patient.room}-{patient.bed}</span></span> */}
                             </div>
                         </div>
                     </div>
@@ -230,192 +240,21 @@ export const PatientDetail: React.FC = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Chips lần khám */}
-                    <div className="mt-5 flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                        {(
-                            [
-                                { id: 'enc-1', code: '3/26DT000000006', date: '09:51 10/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Cấp cứu' },
-                                { id: 'enc-2', code: '2/26DT000000005', date: '09:46 10/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Cấp cứu' },
-                                { id: 'enc-3', code: '1/26PK000000006', date: '10:19 07/01/2026', doctor: 'BS. Lê Thị Phương Thảo', dept: 'Khoa Sản' },
-                            ] as const
-                        ).map((e, idx) => (
-                            <button
-                                key={e.id}
-                                onClick={() => setSelectedEncounterId(e.id)}
-                                className={[
-                                    "min-w-[260px] md:min-w-[300px] rounded-3xl border p-5 text-left transition-all",
-                                    selectedEncounterId === e.id
-                                        ? "bg-blue-600 border-blue-600 text-white shadow-lg"
-                                        : "bg-white border-slate-200 hover:bg-slate-50"
-                                ].join(' ')}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm font-black">
-                                        {e.code}
-                                    </div>
-                                    <div className={selectedEncounterId === e.id ? "text-white/80" : "text-slate-400"}>
-                                        <i className="fa-solid fa-circle text-[8px]"></i>
-                                    </div>
-                                </div>
-
-                                <div className={["mt-2 text-xs font-bold", selectedEncounterId === e.id ? "text-white/90" : "text-slate-600"].join(' ')}>
-                                    <i className="fa-regular fa-clock mr-2"></i>{e.date}
-                                </div>
-
-                                <div className={["mt-1 text-xs font-bold", selectedEncounterId === e.id ? "text-white/90" : "text-slate-600"].join(' ')}>
-                                    <i className="fa-solid fa-user-doctor mr-2"></i>{e.doctor}
-                                </div>
-
-                                <div className={["mt-2 text-[10px] font-black uppercase tracking-widest", selectedEncounterId === e.id ? "text-white/70" : "text-slate-400"].join(' ')}>
-                                    {e.dept}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                    <EncounterList
+                        idBenhAn={IdBenhAn}
+                        selectedEncounterId={selectedEncounterId}
+                        onChangeSelected={setSelectedEncounterId}
+                    />
                 </div>
             )
             }
             {/* TAB CONTENT: VITALS WITH TRENDS */}
             {activeTab === 'vitals' && (
-                <div className="space-y-6">
-                    {vitalsByEncounter.length === 0 ? (
-                        <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm text-center text-slate-400 font-bold">
-                            Chưa có dữ liệu sinh hiệu.
-                        </div>
-                    ) : (
-                        vitalsByEncounter.map((g) => (
-                            <div key={g.encounterId} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                                {/* Bảng sinh hiệu của lần khám đó */}
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-white border-b border-slate-200">
-                                        <tr>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Mạch</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Nhiệt độ</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Huyết áp tối đa</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Huyết áp tối thiểu</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Nhịp thở</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">SpO2</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Cân nặng</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">Chiều cao</th>
-                                            <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px]">BMI</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {g.items.map((v: any) => {
-                                            const vScore = calculateNEWS2(v);
-                                            return (
-                                                <tr key={v.id} className="hover:bg-slate-50 transition">
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.heartRate}</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.temperature}°C</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.bpSystolic}</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.bpDiastolic}</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.respiratoryRate}</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.spO2}%</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.weightKg} kg</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.heightCm} cm</td>
-                                                    <td className="px-6 py-4 font-black text-slate-700">{v.bmi}</td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ))
-                    )}
-                </div>
+                <VitalsTable idPhieuKham={selectedEncounterId} />
             )}
             {/* TAB CONTENT: CLS/DVKT */}
             {activeTab === 'services' && (
-                <div className="space-y-6">
-                    {/* LẦN KHÁM (selector) */}
-                    {/* DANH SÁCH CLS/DVKT */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <div>
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh sách chỉ định CLS/DVKT</div>
-                                <div className="text-slate-900 font-black mt-1">Hiển thị theo lần khám đã chọn</div>
-                            </div>
-                            {/* Search (view only) */}
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 w-full md:w-[360px]">
-                                    <i className="fa-solid fa-magnifying-glass text-slate-400 text-sm"></i>
-                                    <input
-                                        className="bg-transparent outline-none w-full text-sm font-bold text-slate-700 placeholder:text-slate-400"
-                                        placeholder="Tìm tên dịch vụ, loại, trạng thái..."
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        {/* List items */}
-                        <div className="mt-5 space-y-3">
-                            {(
-                                // ✅ UI demo: nếu bạn có data services theo encounter, thay bằng list theo selectedEncounterId
-                                [
-                                    { id: 's1', tag: 'LAB', title: 'Xét nghiệm CRP', doctor: 'BS. Nguyễn Văn A', time: '16/01/2026 14:14', status: 'Chờ thực hiện' },
-                                    { id: 's2', tag: 'CĐHA', title: 'X-quang phổi thẳng', doctor: 'BS. Nguyễn Văn A', time: '16/01/2026 14:20', status: 'Đang thực hiện' },
-                                    { id: 's3', tag: 'DVKT', title: 'Siêu âm ổ bụng', doctor: 'BS. Nguyễn Văn A', time: '16/01/2026 14:35', status: 'Có kết quả' },
-                                ] as const
-                            ).map((it) => {
-                                const status = STATUS_STYLE[it.status] ?? { cls: "text-slate-400", dot: "bg-slate-300" };
-                                const tagTone =
-                                    it.tag === 'LAB'
-                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                                        : it.tag === 'CĐHA'
-                                            ? 'bg-purple-50 text-purple-700 border-purple-100'
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-100';
-
-                                return (
-                                    <button
-                                        key={it.id}
-                                        className="w-full text-left rounded-3xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition p-5"
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-xl border ${tagTone}`}>
-                                                        {it.tag}
-                                                    </span>
-                                                    <div className="text-base md:text-lg font-black text-slate-900 truncate">
-                                                        {it.title}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 font-bold">
-                                                    <span className="inline-flex items-center gap-2">
-                                                        <i className="fa-solid fa-user-doctor text-slate-400"></i>
-                                                        {it.doctor}
-                                                    </span>
-                                                    <span className="inline-flex items-center gap-2">
-                                                        <i className="fa-regular fa-clock text-slate-400"></i>
-                                                        {it.time}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col items-end gap-2 shrink-0">
-                                                <div className={`text-xs font-black ${status.cls}`}>
-                                                    {it.status}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                        trạng thái
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-
-                            {/* Empty state (nếu muốn dùng) */}
-                            {/* <div className="border border-dashed border-slate-200 rounded-3xl p-10 text-center text-slate-400 font-bold">
-                Không có chỉ định CLS/DVKT trong lần khám này.
-                </div> */}
-                        </div>
-                    </div>
-                </div>
+               <DvktList idPhieuKham={selectedEncounterId} />
             )}
             {/* TAB CONTENT: meds */}
             {activeTab === 'meds' && (
@@ -745,7 +584,7 @@ export const PatientDetail: React.FC = () => {
                                 <p className="text-sm text-slate-600 mt-1">Chuyển từ Khoa Khám bệnh sang khoa nội</p>
                             </div>
                         </div>
-                         <h3 className="font-bold text-slate-800 mb-6 mt-6">Lịch sử chuyển buồng</h3>
+                        <h3 className="font-bold text-slate-800 mb-6 mt-6">Lịch sử chuyển buồng</h3>
                         <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
                             <div className="relative pl-8">
                                 <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white bg-blue-500"></div>
