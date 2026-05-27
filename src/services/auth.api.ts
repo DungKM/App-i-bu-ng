@@ -282,4 +282,44 @@ export const authApi = {
 
     return await res.json();
   },
+
+  downloadUsersImportTemplate: async () => {
+    const res = await authenticatedRequest(`${env.API_BACKEND_AUTH_NODE_URL}/auth/users/import/template`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error("Không thể tải file mẫu");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mau_import_tai_khoan.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  importDepartments: async (departments: any[]) => {
+    const res = await authenticatedRequest(`${env.API_BACKEND_AUTH_NODE_URL}/auth/departments/import`, {
+      method: "POST",
+      body: JSON.stringify({ departments }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.message || "Lỗi khi import khoa phòng");
+    }
+    return await res.json();
+  },
+
+  downloadDepartmentTemplate: async () => {
+    const res = await authenticatedRequest(`${env.API_BACKEND_AUTH_NODE_URL}/auth/departments/import/template`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error("Không thể tải file mẫu");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mau_import_khoa_phong.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };

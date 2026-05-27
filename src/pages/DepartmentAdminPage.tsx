@@ -1,6 +1,7 @@
 // src/pages/DepartmentAdminPage.tsx
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as XLSX from "xlsx";
 import { authApi } from "@/services/auth.api";
 import { DepartmentModal } from "@/components/DepartmentModal";
 
@@ -10,6 +11,8 @@ export const DepartmentAdminPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editData, setEditData] = useState<any>(null);
     const [search, setSearch] = useState("");
+    const [importResult, setImportResult] = useState<any>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const { data: departments, isLoading } = useQuery({
         queryKey: ["departments"],
@@ -25,10 +28,54 @@ export const DepartmentAdminPage = () => {
         onError: (error: any) => alert(error.message)
     });
 
+    const importMutation = useMutation({
+        mutationFn: (departments: any[]) => authApi.importDepartments(departments),
+        onSuccess: (result: any) => {
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            setImportResult(result);
+        },
+        onError: (error: any) => alert(error.message),
+    });
+
     const handleDelete = (id: string, name: string) => {
         if (window.confirm(`Bạn có chắc muốn xóa ${name}?`)) {
             deleteMutation.mutate(id);
         }
+    };
+
+    const handleDownloadTemplate = async () => {
+        setIsDownloading(true);
+        try {
+            await authApi.downloadDepartmentTemplate();
+        } catch (err: any) {
+            alert(err.message || "Không thể tải file mẫu");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    const handleImportExcel = async (file: File) => {
+        const data = await file.arrayBuffer();
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: "" }) as any[];
+
+        const departments = rows
+            .map((r: any) => ({
+                name: String(r.name || r["Tên đơn vị"] || "").trim(),
+                type: String(r.type || r["Loại"] || "").trim().toUpperCase(),
+                idHis: String(r.idHis || r["ID HIS"] || "").trim() || undefined,
+                parentIdHis: String(r.parentIdHis || r["ID HIS Khoa cha"] || "").trim() || undefined,
+            }))
+            .filter((d: any) => d.name);
+
+        if (departments.length === 0) {
+            alert("Không có dữ liệu hợp lệ trong file");
+            return;
+        }
+
+        setImportResult(null);
+        importMutation.mutate(departments);
     };
 
     const normalized = (value: unknown) => String(value ?? "").toLowerCase().trim();
@@ -62,13 +109,80 @@ export const DepartmentAdminPage = () => {
                         <p className="text-slate-400 text-xs font-black uppercase tracking-widest mt-1">Quản lý Khoa & Phòng trực thuộc</p>
                     </div>
                 </div>
-                <button
-                    onClick={() => { setEditData(null); setIsModalOpen(true); }}
-                    className="w-full md:w-auto bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition-all"
-                >
-                    <i className="fa-solid fa-plus mr-2"></i> THÊM MỚI
-                </button>
+                <div className="flex flex-wrap gap-3 items-center justify-end">
+                    <button
+                        onClick={handleDownloadTemplate}
+                        disabled={isDownloading}
+                        className="flex items-center gap-2 bg-emerald-500 text-white px-5 py-3 rounded-2xl font-black text-sm shadow-lg hover:scale-105 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {isDownloading ? (
+                            <><i className="fa-solid fa-spinner animate-spin"></i> ĐANG TẢI...</>
+                        ) : (
+                            <><i className="fa-solid fa-file-arrow-down"></i> TẢI MẪU</>
+                        )}
+                    </button>
+                    <label className={`flex items-center gap-2 bg-sky-500 text-white px-5 py-3 rounded-2xl font-black text-sm shadow-lg transition-all cursor-pointer ${importMutation.isPending ? "opacity-60 cursor-not-allowed" : "hover:scale-105"}`}>
+                        {importMutation.isPending ? (
+                            <><i className="fa-solid fa-spinner animate-spin"></i> ĐANG XỬ LÝ...</>
+                        ) : (
+                            <><i className="fa-solid fa-file-import"></i> IMPORT EXCEL</>
+                        )}
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            className="hidden"
+                            disabled={importMutation.isPending}
+                            onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) handleImportExcel(f);
+                                e.currentTarget.value = "";
+                            }}
+                        />
+                    </label>
+                    <button
+                        onClick={() => { setEditData(null); setIsModalOpen(true); }}
+                        className="flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-lg hover:scale-105 transition-all"
+                    >
+                        <i className="fa-solid fa-plus"></i> THÊM MỚI
+                    </button>
+                </div>
             </div>
+
+            {importResult && (
+                <div className={`bg-white p-6 rounded-[28px] border shadow-sm ${importResult.errors?.length > 0 ? "border-amber-200" : "border-emerald-200"}`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="font-black text-slate-700 text-sm uppercase tracking-tight">
+                            <i className={`fa-solid ${importResult.errors?.length > 0 ? "fa-triangle-exclamation text-amber-500" : "fa-circle-check text-emerald-500"} mr-2`}></i>
+                            Kết quả import
+                        </span>
+                        <button onClick={() => setImportResult(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mb-3">
+                        <span className="text-xs font-black bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl">
+                            <i className="fa-solid fa-plus mr-1"></i>Thêm mới: {importResult.data?.inserted ?? 0}
+                        </span>
+                        <span className="text-xs font-black bg-blue-100 text-blue-700 px-3 py-1.5 rounded-xl">
+                            <i className="fa-solid fa-pen mr-1"></i>Cập nhật: {importResult.data?.updated ?? 0}
+                        </span>
+                        {importResult.errors?.length > 0 && (
+                            <span className="text-xs font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-xl">
+                                <i className="fa-solid fa-circle-exclamation mr-1"></i>Lỗi: {importResult.errors.length} dòng
+                            </span>
+                        )}
+                    </div>
+                    {importResult.errors?.length > 0 && (
+                        <div className="max-h-44 overflow-y-auto space-y-1.5">
+                            {importResult.errors.map((err: any, i: number) => (
+                                <div key={i} className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-xl font-bold">
+                                    Dòng {err.row}{err.name ? ` (${err.name})` : ""}: {err.message}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
                 <div className="border-b border-slate-100 px-4 py-4 md:px-6">
