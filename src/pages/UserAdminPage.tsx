@@ -14,6 +14,7 @@ export const UserAdminPage = () => {
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [isDeptOpen, setIsDeptOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const deptDropdownRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const pageSize = 20; // đổi tuỳ ý
@@ -64,6 +65,17 @@ export const UserAdminPage = () => {
     }
 
     importMutation.mutate(payload);
+  };
+
+  const handleDownloadTemplate = async () => {
+    setIsDownloading(true);
+    try {
+      await authApi.downloadUsersImportTemplate();
+    } catch (err: any) {
+      alert(err.message || "Không thể tải file mẫu");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const normalized = (s: any) => String(s ?? "").toLowerCase().trim();
@@ -144,26 +156,42 @@ export const UserAdminPage = () => {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-end">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-full md:w-auto bg-[#1EADED] text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-sky-100 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+            onClick={handleDownloadTemplate}
+            disabled={isDownloading}
+            className="flex items-center gap-2 bg-emerald-500 text-white px-5 py-3 rounded-2xl font-black text-sm shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <i className="fa-solid fa-plus"></i> THÊM TÀI KHOẢN
+            {isDownloading ? (
+              <><i className="fa-solid fa-spinner animate-spin"></i> ĐANG TẢI...</>
+            ) : (
+              <><i className="fa-solid fa-file-arrow-down"></i> TẢI MẪU</>
+            )}
           </button>
-          <label className="w-full md:w-auto bg-white border border-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-black shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer">
-            <i className="fa-solid fa-file-import"></i> IMPORT EXCEL
+          <label className={`flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-3 rounded-2xl font-black text-sm shadow-sm transition-all cursor-pointer ${importMutation.isPending ? "opacity-60 cursor-not-allowed" : "hover:scale-105 active:scale-95"}`}>
+            {importMutation.isPending ? (
+              <><i className="fa-solid fa-spinner animate-spin"></i> ĐANG XỬ LÝ...</>
+            ) : (
+              <><i className="fa-solid fa-file-import"></i> IMPORT EXCEL</>
+            )}
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
               className="hidden"
+              disabled={importMutation.isPending}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) handleImportExcel(f);
-                e.currentTarget.value = ""; // để chọn lại cùng file vẫn trigger
+                e.currentTarget.value = "";
               }}
             />
           </label>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-[#1EADED] text-white px-6 py-3 rounded-2xl font-black text-sm shadow-lg shadow-sky-100 hover:scale-105 active:scale-95 transition-all"
+          >
+            <i className="fa-solid fa-plus"></i> THÊM TÀI KHOẢN
+          </button>
         </div>
       </div>
       <div className="w-full md:w-[620px]">
