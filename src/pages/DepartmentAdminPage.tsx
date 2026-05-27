@@ -57,13 +57,27 @@ export const DepartmentAdminPage = () => {
     const handleImportExcel = async (file: File) => {
         const data = await file.arrayBuffer();
         const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: "" }) as any[];
+
+        // Tìm sheet có dữ liệu khoa/phòng (tránh đọc nhầm sheet "Hướng dẫn")
+        let rows: any[] = [];
+        for (const sheetName of wb.SheetNames) {
+            const ws = wb.Sheets[sheetName];
+            const candidate = XLSX.utils.sheet_to_json(ws, { defval: "" }) as any[];
+            if (candidate.length > 0) {
+                const first = candidate[0] as any;
+                const hasName = first["name (*)"] !== undefined || first.name !== undefined || first["Tên đơn vị"] !== undefined;
+                if (hasName) { rows = candidate; break; }
+            }
+        }
+        // fallback: sheet đầu tiên
+        if (rows.length === 0) {
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" }) as any[];
+        }
 
         const departments = rows
             .map((r: any) => ({
-                name: String(r.name || r["name (*)"] || r["Tên đơn vị"] || "").trim(),
-                type: String(r.type || r["type (*)"] || r["Loại"] || "").trim().toUpperCase(),
+                name: String(r["name (*)"] || r.name || r["Tên đơn vị"] || "").trim(),
+                type: String(r["type (*)"] || r.type || r["Loại"] || "").trim().toUpperCase(),
                 idHis: String(r.idHis || r["ID HIS"] || "").trim() || undefined,
                 parentIdHis: String(r.parentIdHis || r["ID HIS Khoa cha"] || "").trim() || undefined,
             }))
