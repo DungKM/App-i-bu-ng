@@ -43,19 +43,36 @@ export const UserAdminPage = () => {
   const handleImportExcel = async (file: File) => {
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data, { type: "array" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
 
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: "" }) as any[];
+    // Tìm sheet có dữ liệu tài khoản (tránh đọc nhầm sheet "Hướng dẫn")
+    let rows: any[] = [];
+    for (const sheetName of wb.SheetNames) {
+      const ws = wb.Sheets[sheetName];
+      const candidate = XLSX.utils.sheet_to_json(ws, { defval: "" }) as any[];
+      if (candidate.length > 0) {
+        const first = candidate[0] as any;
+        const hasUser = first["username (*)"] !== undefined || first.username !== undefined || first.UserName !== undefined;
+        if (hasUser) { rows = candidate; break; }
+      }
+    }
+    if (rows.length === 0) {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" }) as any[];
+    }
 
     const payload = rows
-      .map((r) => ({
-        username: String(r.username || r.UserName || "").trim(),
-        idKhoa: String(r.idKhoa || "").trim() || null,
-        role: String(r.role || "").trim().toLowerCase(),
+      .map((r: any) => ({
+        username: String(r["username (*)"] || r.username || r.UserName || "").trim(),
+        idKhoa: String(r["idKhoa"] || r["ID Khoa"] || "").trim() || null,
+        role: String(r["role (*)"] || r.role || "").trim().toLowerCase(),
         password: "admin123",
-        isActive: true
+        isActive: true,
       }))
       .filter((x) => x.username);
+
+    if (payload.length === 0) {
+      alert("Không có dữ liệu hợp lệ trong file");
+      return;
+    }
 
     const validRoles = new Set(["admin", "doctor", "nurse"]);
     const bad = payload.filter((x) => !validRoles.has(x.role));
