@@ -62,8 +62,8 @@ export const DepartmentAdminPage = () => {
 
         const departments = rows
             .map((r: any) => ({
-                name: String(r.name || r["Tên đơn vị"] || "").trim(),
-                type: String(r.type || r["Loại"] || "").trim().toUpperCase(),
+                name: String(r.name || r["name (*)"] || r["Tên đơn vị"] || "").trim(),
+                type: String(r.type || r["type (*)"] || r["Loại"] || "").trim().toUpperCase(),
                 idHis: String(r.idHis || r["ID HIS"] || "").trim() || undefined,
                 parentIdHis: String(r.parentIdHis || r["ID HIS Khoa cha"] || "").trim() || undefined,
             }))
