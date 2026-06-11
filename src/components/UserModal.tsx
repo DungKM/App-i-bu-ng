@@ -4,11 +4,31 @@ import { authApi } from "@/services/auth.api";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
 
-export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
+type UserModalProps = {
+    isOpen: boolean;
+    onClose: () => void;
+    data?: any;
+    departments?: any[];
+};
+
+type UserFormData = {
+    fullName: string;
+    username: string;
+    password: string;
+    role: string;
+    idKhoa: string;
+};
+
+export const UserModal = ({ isOpen, onClose, data, departments }: UserModalProps) => {
     const queryClient = useQueryClient();
-    const [formData, setFormData] = useState({
-        fullName: "", username: "", password: "", role: "nurse", idKhoa: ""
+    const [formData, setFormData] = useState<UserFormData>({
+        fullName: "",
+        username: "",
+        password: "",
+        role: "nurse",
+        idKhoa: "",
     });
+    const [fieldErrors, setFieldErrors] = useState<{ username?: string }>({});
 
     useEffect(() => {
         if (data) {
@@ -17,22 +37,45 @@ export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
                 username: data.username,
                 password: "",
                 role: data.role,
-                idKhoa: data.idKhoa?._id || data.idKhoa || ""
+                idKhoa: data.idKhoa?._id || data.idKhoa || "",
             });
         } else {
-            setFormData({ fullName: "", username: "", password: "", role: "nurse", idKhoa: "" });
+            setFormData({
+                fullName: "",
+                username: "",
+                password: "",
+                role: "nurse",
+                idKhoa: "",
+            });
         }
+
+        setFieldErrors({});
     }, [data, isOpen]);
 
+    const handleChange = (field: keyof UserFormData, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+
+        if (field === "username" && fieldErrors.username) {
+            setFieldErrors((prev) => ({ ...prev, username: undefined }));
+        }
+    };
+
     const mutation = useMutation({
-        mutationFn: (payload: any) =>
+        mutationFn: (payload: UserFormData) =>
             data ? authApi.updateUser(data._id, payload) : authApi.createUser(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["users"] });
             toast.success(data ? "Cập nhật thành công!" : "Tạo tài khoản thành công!");
             onClose();
         },
-        onError: (err: any) => toast.error(err.message)
+        onError: (err: any) => {
+            if (!data && err?.message === "Tên đăng nhập đã tồn tại") {
+                setFieldErrors({ username: err.message });
+                return;
+            }
+
+            toast.error(err?.message || "Không thể lưu tài khoản");
+        },
     });
 
     if (!isOpen) return null;
@@ -46,18 +89,24 @@ export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
                 </h2>
 
                 <div className="space-y-4">
-                    <input
-                        placeholder="Tên đăng nhập"
-                        value={formData.username}
-                        onChange={e => setFormData({ ...formData, username: e.target.value })}
-                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-700 outline-none"
-                    />
+                    <div>
+                        <input
+                            placeholder="Tên đăng nhập"
+                            value={formData.username}
+                            onChange={(e) => handleChange("username", e.target.value)}
+                            className={`w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none border transition-colors ${fieldErrors.username ? "border-red-400 focus:ring-2 focus:ring-red-100" : "border-transparent"}`}
+                        />
+                        {fieldErrors.username && (
+                            <p className="text-sm font-bold text-red-500 mt-2">{fieldErrors.username}</p>
+                        )}
+                    </div>
+
                     {!data && (
                         <input
                             type="password"
                             placeholder="Mật khẩu"
                             value={formData.password}
-                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                            onChange={(e) => handleChange("password", e.target.value)}
                             className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-700 outline-none"
                         />
                     )}
@@ -65,7 +114,7 @@ export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
                     <div className="grid grid-cols-2 gap-4">
                         <select
                             value={formData.role}
-                            onChange={e => setFormData({ ...formData, role: e.target.value })}
+                            onChange={(e) => handleChange("role", e.target.value)}
                             className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-700"
                         >
                             <option value="doctor">Bác sĩ</option>
@@ -75,7 +124,7 @@ export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
 
                         <select
                             value={formData.idKhoa}
-                            onChange={e => setFormData({ ...formData, idKhoa: e.target.value })}
+                            onChange={(e) => handleChange("idKhoa", e.target.value)}
                             className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-700"
                         >
                             <option value="">Chọn Khoa/Phòng</option>
@@ -89,7 +138,9 @@ export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
                 </div>
 
                 <div className="flex gap-3 mt-8">
-                    <button onClick={onClose} className="flex-1 py-4 font-black text-slate-400 uppercase text-xs">Hủy</button>
+                    <button onClick={onClose} className="flex-1 py-4 font-black text-slate-400 uppercase text-xs">
+                        Hủy
+                    </button>
                     <button
                         onClick={() => mutation.mutate(formData)}
                         disabled={mutation.isPending}
@@ -98,7 +149,6 @@ export const UserModal = ({ isOpen, onClose, data, departments }: any) => {
                         {mutation.isPending ? "Đang xử lý..." : "Lưu dữ liệu"}
                     </button>
                 </div>
-
             </div>
         </div>,
         document.body
