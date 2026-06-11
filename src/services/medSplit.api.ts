@@ -1,6 +1,8 @@
 import { requestNode } from "./http.node";
 import type { BuongPhongResponse, DonThuocItem, MedVisitLite, SplitQty } from "@/types/dibuong";
 
+export type SplitSource = "UPSTREAM" | "MANUAL" | "RULE" | "AI";
+
 export interface ReturnHistoryItem {
   quantity: number;
   reason: string;
@@ -13,7 +15,7 @@ export interface MedSplitItem {
   splits: SplitQty;
   status?: string;
   confirmedShifts?: string[];
-  splitSource?: "MANUAL" | "RULE" | "AI";
+  splitSource?: SplitSource;
   confidence?: number;
   needsReview?: boolean;
   reason?: string | null;
