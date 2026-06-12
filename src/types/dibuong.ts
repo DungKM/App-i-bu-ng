@@ -31,6 +31,7 @@ export interface GiuongItem {
 }
 export interface BenhAnItem {
   IdBenhAn: string;
+  MaLanVaoVien: string | null;
   MaBenhAn: string;
   MaBenhNhan: string;
   HoTenBenhNhan: string;
