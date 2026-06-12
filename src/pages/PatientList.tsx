@@ -42,6 +42,7 @@ export const PatientList: React.FC = () => {
           id: ba.IdBenhAn,
           name: ba.HoTenBenhNhan,
           code: ba.MaBenhNhan,
+          maLanVaoVien: ba.MaLanVaoVien,
           room: phong.Ma,
           bed: giuong.MaGiuong,
           medicationToday:
@@ -90,6 +91,7 @@ export const PatientList: React.FC = () => {
               (p) =>
                 (p.name ?? "").toLowerCase().includes(s) ||
                 String(p.code ?? "").toLowerCase().includes(s) ||
+                String(p.maLanVaoVien ?? "").toLowerCase().includes(s) ||
                 String(p.bed ?? "").toLowerCase().includes(s) ||
                 String(p.room ?? "").toLowerCase().includes(s)
             );
@@ -213,7 +215,7 @@ export const PatientList: React.FC = () => {
           <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors"></i>
           <input
             type="text"
-            placeholder="Tìm tên bệnh nhân, mã số..."
+            placeholder="Tìm tên bệnh nhân, mã BN, mã lần vào viện..."
             className="w-full pl-12 pr-6 py-4 rounded-3xl border-2 border-slate-200 bg-white text-slate-900 font-black text-sm placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
