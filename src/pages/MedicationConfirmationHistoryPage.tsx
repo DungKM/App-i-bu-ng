@@ -174,67 +174,78 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
 
   return (
     <div className="space-y-5 px-3 md:px-6 max-w-[1600px] mx-auto">
-      <div className="rounded-[32px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-              Chỉ Hiển Thị Lịch Sử
-            </div>
-            <h1 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900 md:text-3xl">
-              Lịch Sử Xác Nhận Dùng Thuốc
+      <div className="rounded-[32px] border border-slate-100 bg-white px-4 py-4 shadow-sm sm:px-5 md:px-6 md:py-5">
+        {/* Row 1: Title + Controls */}
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          {/* Title */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+              Lịch Sử
+            </span>
+            <h1 className="text-lg font-black uppercase tracking-tight text-slate-900 sm:text-xl md:text-2xl">
+              Xác Nhận Dùng Thuốc
             </h1>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-              <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sky-700">
-                Khoa: {user?.tenKhoa || "Khoa"}
-              </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">
-                Bệnh nhân: {filteredRows.length}
-              </span>
-              <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-700">
-                Lượt xác nhận: {totalConfirmations}
-              </span>
-              <span className="rounded-full bg-violet-50 px-3 py-1.5 text-violet-700">
-                Thuốc: {columns.length}
-              </span>
-            </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative sm:w-[280px]">
-              <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          {/* Controls */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {/* Search — full width on mobile, fixed on sm+ */}
+            <div className="relative">
+              <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] text-slate-400"></i>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm tên hoặc mã bệnh nhân"
-                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-bold text-slate-800 outline-none focus:border-primary"
+                placeholder="Tên hoặc mã bệnh nhân"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-bold text-slate-800 outline-none focus:border-primary focus:bg-white sm:w-[210px]"
               />
             </div>
-            <input
-              type="date"
-              value={draftDate}
-              onChange={(e) => setDraftDate(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800 outline-none focus:border-primary"
-            />
-            <button
-              type="button"
-              onClick={() => setDate(draftDate)}
-              className="rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-sm"
-            >
-              Tìm theo ngày
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const today = formatDateInput();
-                setDraftDate(today);
-                setDate(today);
-              }}
-              className="rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-700"
-            >
-              Hôm nay
-            </button>
+
+            {/* Date + buttons — always on one row */}
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={draftDate}
+                onChange={(e) => setDraftDate(e.target.value)}
+                className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black text-slate-800 outline-none focus:border-primary focus:bg-white sm:flex-none"
+              />
+              <button
+                type="button"
+                onClick={() => setDate(draftDate)}
+                className="shrink-0 rounded-2xl bg-primary px-3 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:opacity-90 sm:px-4"
+              >
+                <span className="sm:hidden">Tìm</span>
+                <span className="hidden sm:inline">Tìm theo ngày</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const today = formatDateInput();
+                  setDraftDate(today);
+                  setDate(today);
+                }}
+                className="shrink-0 rounded-2xl bg-slate-100 px-3 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-200 sm:px-4"
+              >
+                Hôm nay
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* Row 2: Stats */}
+        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3 text-xs font-bold sm:gap-2">
+          <span className="rounded-full bg-sky-50 px-2.5 py-1.5 text-sky-700 sm:px-3">
+            Khoa: {user?.tenKhoa || "Khoa"}
+          </span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1.5 text-slate-600 sm:px-3">
+            Bệnh nhân: {filteredRows.length}
+          </span>
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1.5 text-emerald-700 sm:px-3">
+            Lượt xác nhận: {totalConfirmations}
+          </span>
+          <span className="rounded-full bg-violet-50 px-2.5 py-1.5 text-violet-700 sm:px-3">
+            Thuốc: {columns.length}
+          </span>
         </div>
       </div>
 
