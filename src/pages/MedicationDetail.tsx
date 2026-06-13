@@ -93,6 +93,8 @@ export const MedicationDetail: React.FC = () => {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
+      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
+      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       setActionDrug(null);
       toast.success("Đã xác nhận dùng thuốc");
     },
@@ -103,6 +105,8 @@ export const MedicationDetail: React.FC = () => {
       cancelConfirmedUsage(selectedEncounterId!, idPhieuThuoc, shift),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
+      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
+      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       setActionDrug(null);
       toast.success("Đã hủy xác nhận dùng thuốc");
     },
@@ -112,6 +116,8 @@ export const MedicationDetail: React.FC = () => {
     mutationFn: (data: any) => returnMedication(selectedEncounterId!, data.idPhieuThuoc, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
+      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
+      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       setActionDrug(null);
       setReturnReason("");
       toast.success("Đã gửi yêu cầu trả thuốc");
@@ -122,6 +128,8 @@ export const MedicationDetail: React.FC = () => {
     mutationFn: (payload: ConfirmAllMedUsagePayload) => confirmAllMedUsage(selectedEncounterId!, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
+      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
+      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       toast.success("Đã xác nhận dùng toàn bộ thuốc trong ca");
     },
     onError: (error: any) => {

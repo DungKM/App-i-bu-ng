@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import * as XLSX from "xlsx";
 
 import { useAuth } from "@/context/AuthContext";
 import { formatFractionValue } from "@/utils/fractions";
@@ -163,6 +164,51 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
     [filteredRows]
   );
 
+  const exportExcel = useCallback(() => {
+    // Hàng tiêu đề
+    const headerRow = [
+      "STT",
+      "Họ Tên Bệnh Nhân",
+      "Mã BN",
+      "Tuổi",
+      ...columns.map((c) => c.hamLuong ? `${c.tenThuoc} (${c.hamLuong})` : c.tenThuoc),
+    ];
+
+    // Hàng dữ liệu
+    const dataRows = filteredRows.map((row, idx) => [
+      idx + 1,
+      row.tenBenhNhan,
+      row.maBenhNhan ?? "",
+      row.tuoi ?? "",
+      ...columns.map((col) => {
+        const cell = row.cells[col.key];
+        if (!cell) return "";
+        const qty = cell.quantities.join(", ");
+        const times = cell.times.join(", ");
+        if (qty && times) return `${qty} (${times})`;
+        return qty || times || "";
+      }),
+    ]);
+
+    const sheetData = [headerRow, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // Căn độ rộng cột tự động
+    const colWidths = headerRow.map((h, i) => ({
+      wch: Math.max(
+        String(h).length,
+        ...dataRows.map((r) => String(r[i] ?? "").length)
+      ) + 2,
+    }));
+    ws["!cols"] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Lịch sử xác nhận");
+
+    const tenKhoa = user?.tenKhoa ? `_${user.tenKhoa.replace(/\s+/g, "_")}` : "";
+    XLSX.writeFile(wb, `LichSuXacNhanThuoc_${date}${tenKhoa}.xlsx`);
+  }, [columns, filteredRows, date, user?.tenKhoa]);
+
   useEffect(() => {
     if (!activeColumnKey) return;
 
@@ -173,78 +219,89 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
   }, [activeColumnKey]);
 
   return (
-    <div className="space-y-5 px-3 md:px-6 max-w-[1600px] mx-auto">
-      <div className="rounded-[32px] border border-slate-100 bg-white px-4 py-4 shadow-sm sm:px-5 md:px-6 md:py-5">
-        {/* Row 1: Title + Controls */}
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          {/* Title */}
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
-              Lịch Sử
-            </span>
-            <h1 className="text-lg font-black uppercase tracking-tight text-slate-900 sm:text-xl md:text-2xl">
-              Xác Nhận Dùng Thuốc
-            </h1>
+    <div className="space-y-4 px-3 md:px-6 pb-24 max-w-[1600px] mx-auto">
+      {/* Header card */}
+      <div className="bg-white rounded-[28px] md:rounded-[36px] border border-slate-100 shadow-sm p-4 md:p-6">
+        {/* Title row */}
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-600 text-white rounded-[18px] md:rounded-[22px] flex items-center justify-center text-xl md:text-2xl shadow-lg shadow-emerald-200 shrink-0">
+              <i className="fa-solid fa-clipboard-list"></i>
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 uppercase leading-none tracking-tighter">
+                Lịch Sử Xác Nhận
+              </h1>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
+                {user?.tenKhoa || "Khoa"}
+              </p>
+            </div>
           </div>
 
-          {/* Controls */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-            {/* Search — full width on mobile, fixed on sm+ */}
-            <div className="relative">
-              <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] text-slate-400"></i>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tên hoặc mã bệnh nhân"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-bold text-slate-800 outline-none focus:border-primary focus:bg-white sm:w-[210px]"
-              />
-            </div>
+          {/* Export button */}
+          <button
+            type="button"
+            onClick={exportExcel}
+            disabled={filteredRows.length === 0 || columns.length === 0}
+            className="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            <i className="fa-solid fa-file-excel text-sm"></i>
+            <span className="hidden sm:inline">Xuất Excel</span>
+          </button>
+        </div>
 
-            {/* Date + buttons — always on one row */}
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={draftDate}
-                onChange={(e) => setDraftDate(e.target.value)}
-                className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black text-slate-800 outline-none focus:border-primary focus:bg-white sm:flex-none"
-              />
-              <button
-                type="button"
-                onClick={() => setDate(draftDate)}
-                className="shrink-0 rounded-2xl bg-primary px-3 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:opacity-90 sm:px-4"
-              >
-                <span className="sm:hidden">Tìm</span>
-                <span className="hidden sm:inline">Tìm theo ngày</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const today = formatDateInput();
-                  setDraftDate(today);
-                  setDate(today);
-                }}
-                className="shrink-0 rounded-2xl bg-slate-100 px-3 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-200 sm:px-4"
-              >
-                Hôm nay
-              </button>
-            </div>
+        {/* Controls row */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Search */}
+          <div className="relative flex-1">
+            <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm tên hoặc mã bệnh nhân..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-bold text-slate-800 outline-none focus:border-primary focus:bg-white transition"
+            />
+          </div>
+
+          {/* Date group */}
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={draftDate}
+              onChange={(e) => setDraftDate(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black text-slate-800 outline-none focus:border-primary focus:bg-white transition"
+            />
+            <button
+              type="button"
+              onClick={() => setDate(draftDate)}
+              className="shrink-0 rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:opacity-90 transition"
+            >
+              Tìm
+            </button>
+            <button
+              type="button"
+              onClick={() => { const t = formatDateInput(); setDraftDate(t); setDate(t); }}
+              className="shrink-0 rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-200 transition"
+            >
+              Hôm nay
+            </button>
           </div>
         </div>
 
-        {/* Row 2: Stats */}
-        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3 text-xs font-bold sm:gap-2">
-          <span className="rounded-full bg-sky-50 px-2.5 py-1.5 text-sky-700 sm:px-3">
-            Khoa: {user?.tenKhoa || "Khoa"}
+        {/* Stats row */}
+        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-black text-slate-600">
+            <i className="fa-solid fa-user-injured mr-1.5 text-slate-400"></i>
+            {filteredRows.length} bệnh nhân
           </span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1.5 text-slate-600 sm:px-3">
-            Bệnh nhân: {filteredRows.length}
+          <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700">
+            <i className="fa-solid fa-check-circle mr-1.5"></i>
+            {totalConfirmations} lượt xác nhận
           </span>
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1.5 text-emerald-700 sm:px-3">
-            Lượt xác nhận: {totalConfirmations}
-          </span>
-          <span className="rounded-full bg-violet-50 px-2.5 py-1.5 text-violet-700 sm:px-3">
-            Thuốc: {columns.length}
+          <span className="rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-black text-violet-700">
+            <i className="fa-solid fa-pills mr-1.5"></i>
+            {columns.length} loại thuốc
           </span>
         </div>
       </div>

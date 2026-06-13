@@ -64,7 +64,7 @@ export const MedicationBedCard: React.FC<{
                                         {visit.patientName}
                                     </h3>
                                     <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400">
-                                        <span className="text-primary font-mono">{visit.patientCode}</span>
+                                        <span className="text-primary font-mono">{visit.maLanVaoVien ?? visit.patientCode}</span>
                                         <span>•</span>
                                         <span className="uppercase">{visit.patientGender ?? "--"}</span>
                                         <span>•</span>

@@ -71,6 +71,7 @@ export const PatientList: React.FC = () => {
         bed.patients.map((p) => ({
           idBenhAn: p.id,
           maBenhNhan: p.code,
+          maLanVaoVien: p.maLanVaoVien,
           tenBenhNhan: p.name,
           room: room.room,
           bed: bed.code,
@@ -283,7 +284,7 @@ export const PatientList: React.FC = () => {
                     <div>
                       <div className="font-black text-slate-900 text-sm">{p.tenBenhNhan}</div>
                       <div className="text-xs text-slate-500 font-bold mt-1">
-                        Mã BN: {p.maBenhNhan || "--"} · Phòng {p.room} · Giường {p.bed}
+                        {p.maLanVaoVien || p.maBenhNhan || "--"} · Phòng {p.room} · Giường {p.bed}
                       </div>
                     </div>
                     <i className="fa-solid fa-chevron-right text-slate-300"></i>
