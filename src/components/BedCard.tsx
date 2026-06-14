@@ -52,7 +52,7 @@ const BedCard: React.FC<BedCardProps> = ({ bedCode, displayPatients, onClick }) 
                     {p.name}
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 mt-0.5">
-                    <span className="text-primary font-mono tracking-tighter">{p.code}</span>
+                    <span className="text-primary font-mono tracking-tighter">{p.maLanVaoVien ?? p.code}</span>
                     <span>•</span>
                     <span>{p.tuoi} Tuổi</span>
                   </div>
