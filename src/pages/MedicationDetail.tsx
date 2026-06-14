@@ -341,6 +341,7 @@ export const MedicationDetail: React.FC = () => {
         isOpen={showQRScanner}
         expectedMaLanVaoVien={maLanVaoVien}
         patientName={tenBenhNhan || "Bệnh nhân"}
+        successLabel={pendingAction?.type === "RETURN" ? "Tiếp tục trả thuốc" : pendingConfirmAll ? `Xác nhận ca ${activeShiftOption?.label ?? ""}` : "Tiếp tục xác nhận thuốc"}
         onClose={() => {
           setShowQRScanner(false);
           setPendingAction(null);
