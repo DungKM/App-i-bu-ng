@@ -115,7 +115,7 @@ export const FeatureFlagAdminPage = () => {
             <i className="fa-solid fa-toggle-on"></i>
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Feature Flags</h1>
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Config Tính Năng</h1>
             <p className="text-slate-400 text-xs font-black uppercase tracking-widest mt-1">Bật / tắt tính năng theo môi trường</p>
           </div>
         </div>
