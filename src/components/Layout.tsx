@@ -125,7 +125,7 @@ export const Layout: React.FC = () => {
                       <i className="fa-solid fa-sitemap mr-2 text-slate-400"></i>Khoa Phòng
                     </Link>
                     <Link to="/admin/feature-flags" className={`block px-4 py-2 text-sm hover:bg-slate-50 ${location.pathname === '/admin/feature-flags' ? 'text-violet-600 font-bold' : 'text-slate-700'}`}>
-                      <i className="fa-solid fa-toggle-on mr-2 text-slate-400"></i>Config Tính Năng
+                      <i className="fa-solid fa-toggle-on mr-2 text-slate-400"></i>Feature Flags
                     </Link>
                   </div>
                 </div>
