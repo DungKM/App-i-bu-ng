@@ -177,7 +177,7 @@ export const SHIFT_TO_SLOT: Record<ShiftType, SlotKey> = {
   [ShiftType.AFTERNOON]: "CHIEU",
   [ShiftType.NIGHT]: "TOI",
 };
-export type ShiftStat = { used: number; pending: number; returned: number };
+export type ShiftStat = { used: number; pending: number; returned: number; total?: number };
 export type MarSummary = {
   shifts: Record<ShiftType, ShiftStat>;
 };

@@ -10,7 +10,7 @@ import { MedicationBedCard } from "@/components/MedicationBedCard";
 import { useAuth } from "@/context/AuthContext";
 import { getMedicationList } from "@/services/medSplit.api";
 import type { MedicationListResponse } from "@/services/medSplit.api";
-import { ShiftType } from "@/types/dibuong";
+import { ShiftType, type ShiftStat } from "@/types/dibuong";
 import { getCurrentShift, SHIFT_OPTIONS } from "@/utils/shifts";
 
 type MedicationStatusFilter = "ALL" | "USED" | "PENDING";
@@ -136,7 +136,7 @@ export const MedicationList: React.FC = () => {
       room.beds.forEach((bed) => {
         bed.visits.forEach((visit) => {
           Object.entries(visit.marSummary?.shifts ?? {}).forEach(([shiftId, stats]) => {
-            result[shiftId] = (result[shiftId] || 0) + Number(stats?.total ?? 0);
+            result[shiftId] = (result[shiftId] || 0) + Number((stats as ShiftStat | undefined)?.total ?? 0);
           });
         });
       });

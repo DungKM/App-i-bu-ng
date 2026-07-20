@@ -59,6 +59,7 @@ export interface MedicationListResponse {
   totalByShift: Record<string, number>;
   meta?: {
     partial?: boolean;
+    stage?: string;
     upstreamErrors?: Array<{ item?: string; message?: string } | string>;
   };
 }
