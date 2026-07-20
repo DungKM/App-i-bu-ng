@@ -67,19 +67,21 @@ export const authenticatedRequest = async (url: string, options: RequestInit) =>
     try {
       console.log("Token expired, attempting auto-refresh...");
       await refreshOnce();
-
-      res = await fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          ...getAuthHeaders(),
-        },
-      });
     } catch (refreshError) {
+      // refresh thất bại => phiên thực sự đã hết hạn
       authStorage.clear();
       window.location.href = "/#/login";
       throw new Error("Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.");
     }
+
+    // lỗi mạng khi gọi lại thì để nguyên lỗi ném ra bên dưới, không đăng xuất người dùng
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...getAuthHeaders(),
+      },
+    });
   }
 
   return res;

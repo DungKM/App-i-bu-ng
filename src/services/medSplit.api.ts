@@ -96,6 +96,7 @@ export interface MedicationConfirmationHistoryItem {
   donVi?: string | null;
   soLuongDung?: number | null;
   confirmedAt?: string | null;
+  shift?: string | null;
 }
 
 export interface MedicationConfirmationHistoryResponse {

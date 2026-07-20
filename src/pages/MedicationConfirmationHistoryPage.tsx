@@ -3,11 +3,39 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/context/AuthContext";
 import { formatFractionValue } from "@/utils/fractions";
+import { SHIFT_LABELS } from "@/utils/shifts";
+import { ShiftType } from "@/types/dibuong";
 import {
   getMedicationConfirmationHistory,
   type MedicationConfirmationHistoryItem,
   type MedicationConfirmationHistoryResponse,
 } from "@/services/medSplit.api";
+
+const SHIFT_ORDER: string[] = [ShiftType.MORNING, ShiftType.NOON, ShiftType.AFTERNOON, ShiftType.NIGHT];
+
+function shiftLabel(shift: string) {
+  return SHIFT_LABELS[shift as ShiftType] || null;
+}
+
+function sortedShiftEntries(cell: { shifts: Record<string, { shift: string; quantities: string[]; times: string[] }> }) {
+  return Object.values(cell.shifts).sort((a, b) => SHIFT_ORDER.indexOf(a.shift) - SHIFT_ORDER.indexOf(b.shift));
+}
+
+function getShiftCellSizing(count: number, dense: boolean) {
+  if (count <= 1) {
+    return dense
+      ? { qty: "text-sm", badge: "text-[10px] px-2 py-0.5", wrapGap: "gap-x-1 gap-y-1", itemGap: "gap-0.5" }
+      : { qty: "text-lg", badge: "text-[11px] px-2.5 py-1", wrapGap: "gap-x-2 gap-y-1.5", itemGap: "gap-1" };
+  }
+  if (count === 2) {
+    return dense
+      ? { qty: "text-xs", badge: "text-[9px] px-1.5 py-0.5", wrapGap: "gap-x-1 gap-y-0.5", itemGap: "gap-0" }
+      : { qty: "text-sm", badge: "text-[10px] px-2 py-0.5", wrapGap: "gap-x-1.5 gap-y-1", itemGap: "gap-0.5" };
+  }
+  return dense
+    ? { qty: "text-[10px]", badge: "text-[8px] px-1 py-0.5", wrapGap: "gap-x-0.5 gap-y-0.5", itemGap: "gap-0" }
+    : { qty: "text-sm", badge: "text-[9px] px-1.5 py-0.5", wrapGap: "gap-x-1 gap-y-1", itemGap: "gap-0" };
+}
 
 function formatDateInput(d = new Date()) {
   const y = d.getFullYear();
@@ -34,9 +62,14 @@ type HistoryColumn = {
   loaiThuoc?: string | null;
 };
 
-type HistoryCell = {
+type HistoryCellShift = {
+  shift: string;
   quantities: string[];
   times: string[];
+};
+
+type HistoryCell = {
+  shifts: Record<string, HistoryCellShift>;
 };
 
 type HistoryRow = {
@@ -58,6 +91,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
     queryKey: ["medication-confirmation-history", date, user?.idKhoa],
     enabled: !!date,
     retry: false,
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: () => getMedicationConfirmationHistory(date, user?.idKhoa),
   });
 
@@ -114,15 +149,18 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
           ? `${formatFractionValue(Number(item.soLuongDung))}${item.donVi ? ` ${item.donVi}` : ""}`
           : null;
       const timeLabel = formatTime(item.confirmedAt);
-      const cell = row.cells[columnKey] ?? { quantities: [], times: [] };
+      const shiftKey = item.shift || "UNKNOWN";
+      const cell = row.cells[columnKey] ?? { shifts: {} };
+      const shiftEntry = cell.shifts[shiftKey] ?? { shift: shiftKey, quantities: [], times: [] };
 
-      if (quantityLabel && !cell.quantities.includes(quantityLabel)) {
-        cell.quantities.push(quantityLabel);
+      if (quantityLabel && !shiftEntry.quantities.includes(quantityLabel)) {
+        shiftEntry.quantities.push(quantityLabel);
       }
-      if (timeLabel && !cell.times.includes(timeLabel)) {
-        cell.times.push(timeLabel);
+      if (timeLabel && !shiftEntry.times.includes(timeLabel)) {
+        shiftEntry.times.push(timeLabel);
       }
 
+      cell.shifts[shiftKey] = shiftEntry;
       row.cells[columnKey] = cell;
     });
 
@@ -156,7 +194,12 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
         return (
           sum +
           Object.values(row.cells).reduce((cellSum, cell) => {
-            return cellSum + Math.max(cell.times.length, cell.quantities.length || 0);
+            return (
+              cellSum +
+              Object.values(cell.shifts).reduce((shiftSum, shiftEntry) => {
+                return shiftSum + Math.max(shiftEntry.times.length, shiftEntry.quantities.length || 0);
+              }, 0)
+            );
           }, 0)
         );
       }, 0),
@@ -335,6 +378,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
 
                         {columns.map((column) => {
                           const cell = row.cells[column.key];
+                          const shiftEntries = cell ? sortedShiftEntries(cell) : [];
+                          const sizing = getShiftCellSizing(shiftEntries.length, true);
 
                           return (
                             <td
@@ -344,23 +389,33 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                               {!cell ? (
                                 <div className="min-h-[56px]"></div>
                               ) : (
-                                <div className="flex min-h-[56px] flex-col items-center justify-center gap-1.5 text-center">
-                                  {cell.quantities.length > 0 && (
-                                    <div className="text-sm font-black text-primary">
-                                      {cell.quantities.join(", ")}
-                                    </div>
-                                  )}
+                                <div
+                                  className={`min-h-[56px] items-center justify-center text-center ${sizing.wrapGap} ${
+                                    shiftEntries.length > 1
+                                      ? "grid grid-cols-2 justify-items-center"
+                                      : "flex flex-col"
+                                  }`}
+                                >
+                                  {shiftEntries.map((shiftEntry) => (
+                                    <div key={shiftEntry.shift} className={`flex flex-col items-center ${sizing.itemGap}`}>
+                                      {shiftEntry.quantities.length > 0 && (
+                                        <div className={`${sizing.qty} font-black text-primary`}>
+                                          {shiftEntry.quantities.join(", ")}
+                                        </div>
+                                      )}
 
-                                  <div className="flex flex-wrap justify-center gap-1">
-                                    {cell.times.map((time) => (
-                                      <span
-                                        key={time}
-                                        className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-black text-sky-700"
-                                      >
-                                        {time}
-                                      </span>
-                                    ))}
-                                  </div>
+                                      <div className="flex flex-wrap justify-center gap-1">
+                                        {shiftEntry.times.map((time) => (
+                                          <span
+                                            key={time}
+                                            className={`rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                          >
+                                            {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </td>
@@ -439,6 +494,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
 
                       {columns.map((column) => {
                         const cell = row.cells[column.key];
+                        const shiftEntries = cell ? sortedShiftEntries(cell) : [];
+                        const sizing = getShiftCellSizing(shiftEntries.length, false);
 
                         return (
                           <td
@@ -448,23 +505,33 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                             {!cell ? (
                               <div></div>
                             ) : (
-                              <div className="flex min-h-[70px] flex-col items-center justify-center gap-2 text-center">
-                                {cell.quantities.length > 0 && (
-                                  <div className="text-lg font-black text-primary">
-                                    {cell.quantities.join(", ")}
-                                  </div>
-                                )}
+                              <div
+                                className={`min-h-[70px] items-center justify-center text-center ${sizing.wrapGap} ${
+                                  shiftEntries.length > 1
+                                    ? "grid grid-cols-2 justify-items-center"
+                                    : "flex flex-col"
+                                }`}
+                              >
+                                {shiftEntries.map((shiftEntry) => (
+                                  <div key={shiftEntry.shift} className={`flex flex-col items-center ${sizing.itemGap}`}>
+                                    {shiftEntry.quantities.length > 0 && (
+                                      <div className={`${sizing.qty} font-black text-primary`}>
+                                        {shiftEntry.quantities.join(", ")}
+                                      </div>
+                                    )}
 
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                  {cell.times.map((time) => (
-                                    <span
-                                      key={time}
-                                      className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black text-sky-700"
-                                    >
-                                      {time}
-                                    </span>
-                                  ))}
-                                </div>
+                                    <div className="flex flex-wrap justify-center gap-1.5">
+                                      {shiftEntry.times.map((time) => (
+                                        <span
+                                          key={time}
+                                          className={`rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                        >
+                                          {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </td>
