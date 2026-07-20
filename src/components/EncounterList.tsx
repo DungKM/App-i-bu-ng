@@ -1,7 +1,16 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getDsLanKham } from "@/services/dibuong.api";
 import type { LanKhamItem } from "@/types/dibuong";
+
+function isSameDay(iso: string, reference: Date) {
+  const d = new Date(iso);
+  return (
+    d.getFullYear() === reference.getFullYear() &&
+    d.getMonth() === reference.getMonth() &&
+    d.getDate() === reference.getDate()
+  );
+}
 
 type Props = {
   idBenhAn: string;
@@ -40,11 +49,39 @@ export const EncounterList: React.FC<Props> = ({
     )[0];
   }, [data]);
 
+  const todayEncounter = useMemo(() => {
+    if (!data || data.length === 0) return null;
+    const today = new Date();
+    const todaysEncounters = data.filter((e) => isSameDay(e.NgayThucKham, today));
+    if (todaysEncounters.length === 0) return null;
+
+    return [...todaysEncounters].sort(
+      (a, b) => new Date(b.NgayThucKham).getTime() - new Date(a.NgayThucKham).getTime()
+    )[0];
+  }, [data]);
+
+  const defaultEncounter = todayEncounter ?? latestEncounter;
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
   useEffect(() => {
     if (mode === "latest" && latestEncounter && selectedEncounterId !== latestEncounter.Id) {
       onChangeSelected(latestEncounter.Id);
+      return;
     }
-  }, [latestEncounter, mode, onChangeSelected, selectedEncounterId]);
+
+    if (mode === "all" && !selectedEncounterId && defaultEncounter) {
+      onChangeSelected(defaultEncounter.Id);
+    }
+  }, [defaultEncounter, latestEncounter, mode, onChangeSelected, selectedEncounterId]);
+
+  useEffect(() => {
+    if (mode !== "all" || !selectedEncounterId) return;
+    cardRefs.current[selectedEncounterId]?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [mode, selectedEncounterId]);
 
   if (!idBenhAn) return null;
   if (isLoading) return <div className="mt-5 text-sm font-black animate-pulse text-sky-400">Đang đồng bộ lần khám…</div>;
@@ -105,6 +142,9 @@ export const EncounterList: React.FC<Props> = ({
       {data?.map((e) => (
         <button
           key={e.Id}
+          ref={(el) => {
+            cardRefs.current[e.Id] = el;
+          }}
           onClick={() => onChangeSelected(e.Id)}
           className={`min-w-[280px] md:min-w-[320px] rounded-[32px] border-2 p-6 text-left transition-all duration-300 ${
             selectedEncounterId === e.Id
