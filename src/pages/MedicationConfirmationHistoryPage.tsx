@@ -17,7 +17,7 @@ function shiftLabel(shift: string) {
   return SHIFT_LABELS[shift as ShiftType] || null;
 }
 
-function sortedShiftEntries(cell: { shifts: Record<string, { shift: string; quantities: string[]; times: string[] }> }) {
+function sortedShiftEntries(cell: { shifts: Record<string, HistoryCellShift> }) {
   return Object.values(cell.shifts).sort((a, b) => SHIFT_ORDER.indexOf(a.shift) - SHIFT_ORDER.indexOf(b.shift));
 }
 
@@ -68,10 +68,14 @@ type HistoryColumn = {
   maxShiftCount: number;
 };
 
+type HistoryCellEvent = {
+  quantity: string | null;
+  time: string | null;
+};
+
 type HistoryCellShift = {
   shift: string;
-  quantities: string[];
-  times: string[];
+  events: HistoryCellEvent[];
 };
 
 type HistoryCell = {
@@ -119,6 +123,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
     const rowMap = new Map<string, HistoryRow>();
 
     items.forEach((item) => {
+      if (!(item.tenThuoc || "").trim()) return;
+
       const columnKey = [
         (item.tenThuoc || "").trim().toLowerCase(),
         (item.hamLuong || "").trim().toLowerCase(),
@@ -158,13 +164,13 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
       const timeLabel = formatTime(item.confirmedAt);
       const shiftKey = item.shift || "UNKNOWN";
       const cell = row.cells[columnKey] ?? { shifts: {} };
-      const shiftEntry = cell.shifts[shiftKey] ?? { shift: shiftKey, quantities: [], times: [] };
+      const shiftEntry = cell.shifts[shiftKey] ?? { shift: shiftKey, events: [] };
 
-      if (quantityLabel && !shiftEntry.quantities.includes(quantityLabel)) {
-        shiftEntry.quantities.push(quantityLabel);
-      }
-      if (timeLabel && !shiftEntry.times.includes(timeLabel)) {
-        shiftEntry.times.push(timeLabel);
+      const isDuplicateEvent = shiftEntry.events.some(
+        (e) => e.quantity === quantityLabel && e.time === timeLabel
+      );
+      if (!isDuplicateEvent && (quantityLabel || timeLabel)) {
+        shiftEntry.events.push({ quantity: quantityLabel, time: timeLabel });
       }
 
       cell.shifts[shiftKey] = shiftEntry;
@@ -215,7 +221,7 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
             return (
               cellSum +
               Object.values(cell.shifts).reduce((shiftSum, shiftEntry) => {
-                return shiftSum + Math.max(shiftEntry.times.length, shiftEntry.quantities.length || 0);
+                return shiftSum + shiftEntry.events.length;
               }, 0)
             );
           }, 0)
@@ -341,45 +347,45 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                       {columns.map((column) => {
                         const width = getColumnWidth(column.maxShiftCount, true);
                         return (
-                        <th
-                          key={`mobile-${column.key}`}
-                          style={{ minWidth: width, maxWidth: width }}
-                          className="relative h-[170px] border-b border-r border-slate-200 p-0 text-center align-bottom"
-                        >
-                          <div className="relative h-full w-full overflow-hidden">
-                            <button
-                              type="button"
-                              title={column.hamLuong ? `${column.tenThuoc} - ${column.hamLuong}` : column.tenThuoc}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveColumnKey((current) =>
-                                  current === `mobile-${column.key}` ? null : `mobile-${column.key}`
-                                );
-                              }}
-                              className="absolute left-1/2 top-1/2 flex w-[170px] -translate-x-1/2 -translate-y-1/2 -rotate-90 flex-col items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-center transition-colors hover:bg-slate-100/80"
-                            >
-                              <div className="w-full truncate text-xs font-black text-slate-800">
-                                {column.tenThuoc}
-                              </div>
-                              {column.hamLuong && (
-                                <div className="w-full truncate text-[10px] font-bold text-primary">
-                                  {column.hamLuong}
+                          <th
+                            key={`mobile-${column.key}`}
+                            style={{ minWidth: width, maxWidth: width }}
+                            className="relative h-[170px] border-b border-r border-slate-200 p-0 text-center align-bottom"
+                          >
+                            <div className="relative h-full w-full overflow-hidden">
+                              <button
+                                type="button"
+                                title={column.hamLuong ? `${column.tenThuoc} - ${column.hamLuong}` : column.tenThuoc}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveColumnKey((current) =>
+                                    current === `mobile-${column.key}` ? null : `mobile-${column.key}`
+                                  );
+                                }}
+                                className="absolute left-1/2 top-1/2 flex w-[170px] -translate-x-1/2 -translate-y-1/2 -rotate-90 flex-col items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-center transition-colors hover:bg-slate-100/80"
+                              >
+                                <div className="w-full truncate text-xs font-black text-slate-800">
+                                  {column.tenThuoc}
                                 </div>
-                              )}
-                            </button>
-                          </div>
-                          {activeColumnKey === `mobile-${column.key}` && (
-                            <div
-                              className="absolute left-1/2 top-2 z-30 w-[180px] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-xl"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="text-xs font-black text-slate-800">{column.tenThuoc}</div>
-                              {column.hamLuong && (
-                                <div className="mt-1 text-[11px] font-bold text-primary">{column.hamLuong}</div>
-                              )}
+                                {column.hamLuong && (
+                                  <div className="w-full truncate text-[10px] font-bold text-primary">
+                                    {column.hamLuong}
+                                  </div>
+                                )}
+                              </button>
                             </div>
-                          )}
-                        </th>
+                            {activeColumnKey === `mobile-${column.key}` && (
+                              <div
+                                className="absolute left-1/2 top-2 z-30 w-[180px] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-xl"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="text-xs font-black text-slate-800">{column.tenThuoc}</div>
+                                {column.hamLuong && (
+                                  <div className="mt-1 text-[11px] font-bold text-primary">{column.hamLuong}</div>
+                                )}
+                              </div>
+                            )}
+                          </th>
                         );
                       })}
                     </tr>
@@ -420,22 +426,22 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                                 >
                                   {shiftEntries.map((shiftEntry) => (
                                     <div key={shiftEntry.shift} className={`flex flex-col items-center ${sizing.itemGap}`}>
-                                      {shiftEntry.quantities.length > 0 && (
-                                        <div className={`${sizing.qty} font-black text-primary`}>
-                                          {shiftEntry.quantities.join(", ")}
+                                      {shiftEntry.events.map((event, idx) => (
+                                        <div key={idx} className="flex flex-col items-center gap-0.5">
+                                          {event.quantity && (
+                                            <div className={`${sizing.qty} font-black text-primary`}>
+                                              {event.quantity}
+                                            </div>
+                                          )}
+                                          {event.time && (
+                                            <span
+                                              className={`whitespace-nowrap rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                            >
+                                              {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${event.time}` : event.time}
+                                            </span>
+                                          )}
                                         </div>
-                                      )}
-
-                                      <div className="flex flex-wrap justify-center gap-1">
-                                        {shiftEntry.times.map((time) => (
-                                          <span
-                                            key={time}
-                                            className={`whitespace-nowrap rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
-                                          >
-                                            {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
-                                          </span>
-                                        ))}
-                                      </div>
+                                      ))}
                                     </div>
                                   ))}
                                 </div>
@@ -463,43 +469,43 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                     {columns.map((column) => {
                       const width = getColumnWidth(column.maxShiftCount, false);
                       return (
-                      <th
-                        key={column.key}
-                        style={{ minWidth: width, maxWidth: width }}
-                        className="relative h-[240px] border-b border-r border-slate-200 p-0 text-center align-bottom"
-                      >
-                        <div className="relative h-full w-full overflow-hidden">
-                          <button
-                            type="button"
-                            title={column.hamLuong ? `${column.tenThuoc} - ${column.hamLuong}` : column.tenThuoc}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveColumnKey((current) => (current === column.key ? null : column.key));
-                            }}
-                            className="absolute left-1/2 top-1/2 flex w-[220px] -translate-x-1/2 -translate-y-1/2 -rotate-90 flex-col items-center gap-1 whitespace-nowrap rounded-xl px-2 py-1 text-center transition-colors hover:bg-slate-100/80"
-                          >
-                            <div className="w-full truncate text-sm font-black text-slate-800">
-                              {column.tenThuoc}
-                            </div>
-                            {column.hamLuong && (
-                              <div className="w-full truncate text-[11px] font-bold text-primary">
-                                {column.hamLuong}
+                        <th
+                          key={column.key}
+                          style={{ minWidth: width, maxWidth: width }}
+                          className="relative h-[240px] border-b border-r border-slate-200 p-0 text-center align-bottom"
+                        >
+                          <div className="relative h-full w-full overflow-hidden">
+                            <button
+                              type="button"
+                              title={column.hamLuong ? `${column.tenThuoc} - ${column.hamLuong}` : column.tenThuoc}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveColumnKey((current) => (current === column.key ? null : column.key));
+                              }}
+                              className="absolute left-1/2 top-1/2 flex w-[220px] -translate-x-1/2 -translate-y-1/2 -rotate-90 flex-col items-center gap-1 whitespace-nowrap rounded-xl px-2 py-1 text-center transition-colors hover:bg-slate-100/80"
+                            >
+                              <div className="w-full truncate text-sm font-black text-slate-800">
+                                {column.tenThuoc}
                               </div>
-                            )}
-                          </button>
-                        </div>
-                        {activeColumnKey === column.key && (
-                          <div
-                            className="absolute left-1/2 top-3 z-30 w-[220px] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-xl"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="text-xs font-black text-slate-800">{column.tenThuoc}</div>
-                            {column.hamLuong && (
-                              <div className="mt-1 text-[11px] font-bold text-primary">{column.hamLuong}</div>
-                            )}
+                              {column.hamLuong && (
+                                <div className="w-full truncate text-[11px] font-bold text-primary">
+                                  {column.hamLuong}
+                                </div>
+                              )}
+                            </button>
                           </div>
-                        )}
-                      </th>
+                          {activeColumnKey === column.key && (
+                            <div
+                              className="absolute left-1/2 top-3 z-30 w-[220px] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-xl"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="text-xs font-black text-slate-800">{column.tenThuoc}</div>
+                              {column.hamLuong && (
+                                <div className="mt-1 text-[11px] font-bold text-primary">{column.hamLuong}</div>
+                              )}
+                            </div>
+                          )}
+                        </th>
                       );
                     })}
                   </tr>
@@ -540,22 +546,22 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                               >
                                 {shiftEntries.map((shiftEntry) => (
                                   <div key={shiftEntry.shift} className={`flex flex-col items-center ${sizing.itemGap}`}>
-                                    {shiftEntry.quantities.length > 0 && (
-                                      <div className={`${sizing.qty} font-black text-primary`}>
-                                        {shiftEntry.quantities.join(", ")}
+                                    {shiftEntry.events.map((event, idx) => (
+                                      <div key={idx} className="flex flex-col items-center gap-1">
+                                        {event.quantity && (
+                                          <div className={`${sizing.qty} font-black text-primary`}>
+                                            {event.quantity}
+                                          </div>
+                                        )}
+                                        {event.time && (
+                                          <span
+                                            className={`whitespace-nowrap rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                          >
+                                            {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${event.time}` : event.time}
+                                          </span>
+                                        )}
                                       </div>
-                                    )}
-
-                                    <div className="flex flex-wrap justify-center gap-1.5">
-                                      {shiftEntry.times.map((time) => (
-                                        <span
-                                          key={time}
-                                          className={`whitespace-nowrap rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
-                                        >
-                                          {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
-                                        </span>
-                                      ))}
-                                    </div>
+                                    ))}
                                   </div>
                                 ))}
                               </div>
