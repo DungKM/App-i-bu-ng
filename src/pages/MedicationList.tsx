@@ -356,7 +356,9 @@ export const MedicationList: React.FC = () => {
                   {String(room.room).replace(/\D/g, "") || "--"}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-black text-base md:text-xl text-slate-800 uppercase tracking-tight">Phong {room.room}</h3>
+                  <h3 className="font-black text-base md:text-xl text-slate-800 uppercase tracking-tight">
+                    Phòng {String(room.room).replace(/^Ph[oò]ng\s*/i, "").trim()}
+                  </h3>
                 </div>
                 <div className="h-px flex-1 bg-slate-100"></div>
               </div>
