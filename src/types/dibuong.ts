@@ -178,20 +178,19 @@ export const SHIFT_TO_SLOT: Record<ShiftType, SlotKey> = {
   [ShiftType.AFTERNOON]: "CHIEU",
   [ShiftType.NIGHT]: "TOI",
 };
-export type ShiftStat = { used: number; pending: number; returned: number; total?: number };
+export type ShiftStat = { used: number; pending: number; returned: number };
 export type MarSummary = {
   shifts: Record<ShiftType, ShiftStat>;
 };
 export type MedVisitLite = {
-  id: string;
+  id: string; 
   patientName: string;
   patientCode: string;
-  maLanVaoVien?: string | null;
   patientGender?: string;
   patientAge?: string;
-  room: string;
-  bed: string;
-  idPhieuKham?: string;
+  room: string; 
+  bed: string; 
+  idPhieuKham?: string; 
   marSummary: MarSummary;
 };
 export interface SplitQty {

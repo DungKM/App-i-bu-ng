@@ -58,28 +58,20 @@ export const MedicationOrders: React.FC<Props> = ({
       .map((it) => {
         const idPhieuThuoc = String(it.IdPhieuThuoc);
         const info = splitMap?.[idPhieuThuoc];
-        const totalMedQty = Number(it.SoLuong ?? 1);
-        const splitQtyInShift = info?.splits ? Number(info.splits[key] ?? 0) : 0;
-        const totalSplitAssigned = info?.splits
+        const qtyInShift = info?.splits ? Number(info.splits[key] ?? 0) : 0;
+        const totalAssigned = info?.splits
           ? Number(info.splits.MORNING ?? 0) +
             Number(info.splits.NOON ?? 0) +
             Number(info.splits.AFTERNOON ?? 0) +
             Number(info.splits.NIGHT ?? 0)
           : 0;
-        // Nếu không có chia ca, dùng SoLuong làm số lượng mặc định cho ca hiện tại
-        const hasAnySplit = totalSplitAssigned > 0;
-        const qtyInShift = hasAnySplit ? splitQtyInShift : totalMedQty;
-        const totalAssigned = hasAnySplit ? totalSplitAssigned : totalMedQty;
         const totalReturned =
           info?.returnHistory?.reduce((sum, item) => {
             return item.shift === shift ? sum + item.quantity : sum;
           }, 0) ?? 0;
         const availableQty = Math.max(0, qtyInShift - totalReturned);
         const isShiftConfirmed = info?.confirmedShifts?.includes(shift) ?? false;
-        // Nếu đã confirm ở ca khác thì không hiện lại
-        const confirmedOtherShift = !isShiftConfirmed &&
-          (info?.confirmedShifts?.length ?? 0) > 0 && !hasAnySplit;
-        const hasShiftData = (qtyInShift > 0 || totalReturned > 0 || isShiftConfirmed) && !confirmedOtherShift;
+        const hasShiftData = qtyInShift > 0 || totalReturned > 0 || isShiftConfirmed;
         const currentStatus = info?.status || "Chờ sử dụng";
 
         return {
@@ -87,6 +79,7 @@ export const MedicationOrders: React.FC<Props> = ({
           idPhieuThuoc,
           currentStatus,
           qtyInShift,
+          totalAssigned,
           availableQty,
           totalReturned,
           isShiftConfirmed,
@@ -121,6 +114,7 @@ export const MedicationOrders: React.FC<Props> = ({
           raw: it,
           idPhieuThuoc,
           qtyInShift,
+          totalAssigned,
           availableQty,
           totalReturned,
           currentStatus,

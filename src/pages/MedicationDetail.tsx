@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { DrugActionModal } from "@/components/DrugActionModal";
 import { EncounterList } from "@/components/EncounterList";
 import { MedicationOrders } from "@/components/MedicationOrders";
-import { QRScannerModal } from "@/components/QRScannerModal";
 import { useAuth } from "@/context/AuthContext";
 import { getDonThuocByPhieuKham } from "@/services/dibuong.api";
 import {
@@ -31,22 +30,11 @@ export const MedicationDetail: React.FC = () => {
   const maBenhNhan = searchParams.get("maBenhNhan") ?? "";
   const tenBenhNhan = searchParams.get("tenBenhNhan") ?? "";
   const tuoi = searchParams.get("tuoi") ?? "";
-  const maLanVaoVien = searchParams.get("maLanVaoVien") ?? null;
 
   const initialEncounterId = searchParams.get("idPhieuKham");
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(initialEncounterId);
   const initialShift = (searchParams.get("shift") as ShiftType) || getCurrentShift();
   const [activeShift, setActiveShift] = useState<ShiftType>(initialShift);
-  const [pendingAction, setPendingAction] = useState<{
-    idPhieuThuoc: string;
-    ten: string;
-    qty: number;
-    type: "CONFIRM" | "RETURN" | "UNCONFIRM";
-    donVi?: string | null;
-    hamLuong?: string | null;
-    loaiThuoc?: string | null;
-  } | null>(null);
-  const [showQRScanner, setShowQRScanner] = useState(false);
   const [actionDrug, setActionDrug] = useState<{
     idPhieuThuoc: string;
     ten: string;
@@ -105,8 +93,6 @@ export const MedicationDetail: React.FC = () => {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
-      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
-      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       setActionDrug(null);
       toast.success("Đã xác nhận dùng thuốc");
     },
@@ -117,8 +103,6 @@ export const MedicationDetail: React.FC = () => {
       cancelConfirmedUsage(selectedEncounterId!, idPhieuThuoc, shift),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
-      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
-      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       setActionDrug(null);
       toast.success("Đã hủy xác nhận dùng thuốc");
     },
@@ -128,8 +112,6 @@ export const MedicationDetail: React.FC = () => {
     mutationFn: (data: any) => returnMedication(selectedEncounterId!, data.idPhieuThuoc, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
-      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
-      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       setActionDrug(null);
       setReturnReason("");
       toast.success("Đã gửi yêu cầu trả thuốc");
@@ -140,8 +122,6 @@ export const MedicationDetail: React.FC = () => {
     mutationFn: (payload: ConfirmAllMedUsagePayload) => confirmAllMedUsage(selectedEncounterId!, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["med-splits", selectedEncounterId] });
-      qc.invalidateQueries({ queryKey: ["medicationList-full"] });
-      qc.invalidateQueries({ queryKey: ["medicationList-layout"] });
       toast.success("Đã xác nhận dùng toàn bộ thuốc trong ca");
     },
     onError: (error: any) => {
@@ -326,33 +306,11 @@ export const MedicationDetail: React.FC = () => {
         splitMap={splitData?.splits ?? {}}
         splitLoading={splitLoading}
         onAction={(data) => {
-          if (data.type === "UNCONFIRM") {
-            setActionDrug(data);
-          } else {
-            setPendingAction(data);
-            setShowQRScanner(true);
+          if (data.type === "RETURN") {
+            setReturnQuantity(data.qty);
+            setReturnReason("");
           }
-        }}
-      />
-
-      <QRScannerModal
-        isOpen={showQRScanner}
-        expectedMaLanVaoVien={maLanVaoVien}
-        patientName={tenBenhNhan || "Bệnh nhân"}
-        onClose={() => {
-          setShowQRScanner(false);
-          setPendingAction(null);
-        }}
-        onSuccess={() => {
-          setShowQRScanner(false);
-          if (pendingAction) {
-            if (pendingAction.type === "RETURN") {
-              setReturnQuantity(pendingAction.qty);
-              setReturnReason("");
-            }
-            setActionDrug(pendingAction);
-            setPendingAction(null);
-          }
+          setActionDrug(data);
         }}
       />
 

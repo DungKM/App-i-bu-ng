@@ -99,21 +99,11 @@ export const MedicationList: React.FC = () => {
   });
   const medicationListData = medicationFullData || medicationLayoutData;
 
-  const isPartialLayout = (medicationListData?.meta as any)?.stage === "layout";
+  const isPartialLayout = medicationListData?.meta?.stage === "layout";
   const wardLayout = useMemo(() => {
     const rawWardLayout = medicationListData?.wardLayout ?? [];
     const medsByVisit = medicationListData?.medsByVisit ?? {};
     const medSplitsByVisit = medicationListData?.medSplitsByVisit ?? {};
-
-    // Build lookup map IdBenhAn → MaLanVaoVien từ wardData (nếu server trả về)
-    const maLanVaoVienMap: Record<string, string | null> = {};
-    (medicationListData?.wardData?.DSPhong ?? []).forEach((phong) => {
-      phong.DsGiuong.forEach((giuong) => {
-        giuong.DsBenhAn.forEach((ba) => {
-          maLanVaoVienMap[ba.IdBenhAn] = ba.MaLanVaoVien;
-        });
-      });
-    });
 
     return rawWardLayout.map((room) => ({
       ...room,
@@ -130,7 +120,6 @@ export const MedicationList: React.FC = () => {
 
           return {
             ...visit,
-            maLanVaoVien: visit.maLanVaoVien ?? maLanVaoVienMap[visit.id] ?? null,
             marSummary: {
               shifts: computedShifts ?? visit.marSummary?.shifts ?? buildAdvancedShiftStats([], {}),
             },
@@ -147,7 +136,7 @@ export const MedicationList: React.FC = () => {
       room.beds.forEach((bed) => {
         bed.visits.forEach((visit) => {
           Object.entries(visit.marSummary?.shifts ?? {}).forEach(([shiftId, stats]) => {
-            result[shiftId] = (result[shiftId] || 0) + Number((stats as { total?: number })?.total ?? 0);
+            result[shiftId] = (result[shiftId] || 0) + Number(stats?.total ?? 0);
           });
         });
       });
@@ -167,7 +156,6 @@ export const MedicationList: React.FC = () => {
             const matchingVisits = bed.visits.filter(
               (visit) =>
                 ((visit.patientName ?? "").toLowerCase().includes(normalized) ||
-                  String(visit.maLanVaoVien ?? "").toLowerCase().includes(normalized) ||
                   String(visit.patientCode ?? "").toLowerCase().includes(normalized) ||
                   String(visit.room ?? "").toLowerCase().includes(normalized) ||
                   String(visit.bed ?? "").toLowerCase().includes(normalized) ||
@@ -336,7 +324,7 @@ export const MedicationList: React.FC = () => {
               key={option.id}
               type="button"
               onClick={() => setStatusFilter(option.id)}
-              className={`flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-[10px] font-black uppercase tracking-[0.16em] transition ${statusFilter === option.id
+              className={`flex min-w-[118px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] transition ${statusFilter === option.id
                 ? "bg-white text-primary shadow-sm"
                 : "text-slate-500 hover:bg-white/70 hover:text-slate-700"
                 }`}
