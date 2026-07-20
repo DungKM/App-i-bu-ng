@@ -31,7 +31,6 @@ export interface GiuongItem {
 }
 export interface BenhAnItem {
   IdBenhAn: string;
-  MaLanVaoVien: string | null;
   MaBenhAn: string;
   MaBenhNhan: string;
   HoTenBenhNhan: string;
@@ -183,15 +182,14 @@ export type MarSummary = {
   shifts: Record<ShiftType, ShiftStat>;
 };
 export type MedVisitLite = {
-  id: string;
+  id: string; 
   patientName: string;
   patientCode: string;
-  maLanVaoVien?: string | null;
   patientGender?: string;
   patientAge?: string;
-  room: string;
-  bed: string;
-  idPhieuKham?: string;
+  room: string; 
+  bed: string; 
+  idPhieuKham?: string; 
   marSummary: MarSummary;
 };
 export interface SplitQty {

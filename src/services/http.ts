@@ -26,9 +26,7 @@ export async function request<T>(path: string, options?: any): Promise<T> {
   try {
     res = await doFetch();
   } catch (err) {
-    // ❗ lỗi CORS / network
-    authStorage.clear();
-    window.location.href = "/#/login";
+    // ❗ lỗi CORS / network — không phải lỗi xác thực nên không được đăng xuất người dùng
     throw new Error("Không thể kết nối server");
   }
 
@@ -36,13 +34,19 @@ export async function request<T>(path: string, options?: any): Promise<T> {
   if (res.status === 401) {
     try {
       await authApi.refreshOnce();
-
-      // gọi lại API sau khi refresh
-      res = await doFetch();
     } catch (e) {
+      // refresh thất bại => phiên thực sự đã hết hạn
       authStorage.clear();
       window.location.href = "/#/login";
       throw new Error("Hết phiên đăng nhập");
+    }
+
+    try {
+      // gọi lại API sau khi refresh
+      res = await doFetch();
+    } catch (err) {
+      // lỗi mạng khi gọi lại, không phải lỗi xác thực nên không được đăng xuất người dùng
+      throw new Error("Không thể kết nối server");
     }
   }
 

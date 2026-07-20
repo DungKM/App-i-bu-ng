@@ -31,16 +31,22 @@ export async function requestNode<T>(path: string, opts: ReqOpts = {}): Promise<
     });
 
     if (res.status === 401) {
+        let newToken: string;
         try {
-            const newToken = await authApi.refreshOnce();
-            res = await fetch(url.toString(), {
-                method: opts.method ?? "GET",
-                headers: { ...getHeaders(), Authorization: `Bearer ${newToken}` },
-                body: opts.body ? JSON.stringify(opts.body) : undefined,
-            });
+            newToken = await authApi.refreshOnce();
         } catch {
-            window.location.href = "/login";
+            // refresh thất bại => phiên thực sự đã hết hạn
+            authStorage.clear();
+            window.location.href = "/#/login";
+            throw new Error("Hết phiên đăng nhập");
         }
+
+        // lỗi mạng khi gọi lại thì để nguyên lỗi ném ra bên dưới, không đăng xuất người dùng
+        res = await fetch(url.toString(), {
+            method: opts.method ?? "GET",
+            headers: { ...getHeaders(), Authorization: `Bearer ${newToken}` },
+            body: opts.body ? JSON.stringify(opts.body) : undefined,
+        });
     }
 
     if (!res.ok) {

@@ -1,14 +1,41 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import * as XLSX from "xlsx";
 
 import { useAuth } from "@/context/AuthContext";
 import { formatFractionValue } from "@/utils/fractions";
+import { SHIFT_LABELS } from "@/utils/shifts";
+import { ShiftType } from "@/types/dibuong";
 import {
   getMedicationConfirmationHistory,
   type MedicationConfirmationHistoryItem,
   type MedicationConfirmationHistoryResponse,
 } from "@/services/medSplit.api";
+
+const SHIFT_ORDER: string[] = [ShiftType.MORNING, ShiftType.NOON, ShiftType.AFTERNOON, ShiftType.NIGHT];
+
+function shiftLabel(shift: string) {
+  return SHIFT_LABELS[shift as ShiftType] || null;
+}
+
+function sortedShiftEntries(cell: { shifts: Record<string, { shift: string; quantities: string[]; times: string[] }> }) {
+  return Object.values(cell.shifts).sort((a, b) => SHIFT_ORDER.indexOf(a.shift) - SHIFT_ORDER.indexOf(b.shift));
+}
+
+function getShiftCellSizing(count: number, dense: boolean) {
+  if (count <= 1) {
+    return dense
+      ? { qty: "text-sm", badge: "text-[10px] px-2 py-0.5", wrapGap: "gap-x-1 gap-y-1", itemGap: "gap-0.5" }
+      : { qty: "text-lg", badge: "text-[11px] px-2.5 py-1", wrapGap: "gap-x-2 gap-y-1.5", itemGap: "gap-1" };
+  }
+  if (count === 2) {
+    return dense
+      ? { qty: "text-xs", badge: "text-[9px] px-1.5 py-0.5", wrapGap: "gap-x-1 gap-y-0.5", itemGap: "gap-0" }
+      : { qty: "text-sm", badge: "text-[10px] px-2 py-0.5", wrapGap: "gap-x-1.5 gap-y-1", itemGap: "gap-0.5" };
+  }
+  return dense
+    ? { qty: "text-[10px]", badge: "text-[8px] px-1 py-0.5", wrapGap: "gap-x-0.5 gap-y-0.5", itemGap: "gap-0" }
+    : { qty: "text-sm", badge: "text-[9px] px-1.5 py-0.5", wrapGap: "gap-x-1 gap-y-1", itemGap: "gap-0" };
+}
 
 function formatDateInput(d = new Date()) {
   const y = d.getFullYear();
@@ -35,9 +62,14 @@ type HistoryColumn = {
   loaiThuoc?: string | null;
 };
 
-type HistoryCell = {
+type HistoryCellShift = {
+  shift: string;
   quantities: string[];
   times: string[];
+};
+
+type HistoryCell = {
+  shifts: Record<string, HistoryCellShift>;
 };
 
 type HistoryRow = {
@@ -59,6 +91,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
     queryKey: ["medication-confirmation-history", date, user?.idKhoa],
     enabled: !!date,
     retry: false,
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: () => getMedicationConfirmationHistory(date, user?.idKhoa),
   });
 
@@ -115,15 +149,18 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
           ? `${formatFractionValue(Number(item.soLuongDung))}${item.donVi ? ` ${item.donVi}` : ""}`
           : null;
       const timeLabel = formatTime(item.confirmedAt);
-      const cell = row.cells[columnKey] ?? { quantities: [], times: [] };
+      const shiftKey = item.shift || "UNKNOWN";
+      const cell = row.cells[columnKey] ?? { shifts: {} };
+      const shiftEntry = cell.shifts[shiftKey] ?? { shift: shiftKey, quantities: [], times: [] };
 
-      if (quantityLabel && !cell.quantities.includes(quantityLabel)) {
-        cell.quantities.push(quantityLabel);
+      if (quantityLabel && !shiftEntry.quantities.includes(quantityLabel)) {
+        shiftEntry.quantities.push(quantityLabel);
       }
-      if (timeLabel && !cell.times.includes(timeLabel)) {
-        cell.times.push(timeLabel);
+      if (timeLabel && !shiftEntry.times.includes(timeLabel)) {
+        shiftEntry.times.push(timeLabel);
       }
 
+      cell.shifts[shiftKey] = shiftEntry;
       row.cells[columnKey] = cell;
     });
 
@@ -157,57 +194,17 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
         return (
           sum +
           Object.values(row.cells).reduce((cellSum, cell) => {
-            return cellSum + Math.max(cell.times.length, cell.quantities.length || 0);
+            return (
+              cellSum +
+              Object.values(cell.shifts).reduce((shiftSum, shiftEntry) => {
+                return shiftSum + Math.max(shiftEntry.times.length, shiftEntry.quantities.length || 0);
+              }, 0)
+            );
           }, 0)
         );
       }, 0),
     [filteredRows]
   );
-
-  const exportExcel = useCallback(() => {
-    // Hàng tiêu đề
-    const headerRow = [
-      "STT",
-      "Họ Tên Bệnh Nhân",
-      "Mã BN",
-      "Tuổi",
-      ...columns.map((c) => c.hamLuong ? `${c.tenThuoc} (${c.hamLuong})` : c.tenThuoc),
-    ];
-
-    // Hàng dữ liệu
-    const dataRows = filteredRows.map((row, idx) => [
-      idx + 1,
-      row.tenBenhNhan,
-      row.maBenhNhan ?? "",
-      row.tuoi ?? "",
-      ...columns.map((col) => {
-        const cell = row.cells[col.key];
-        if (!cell) return "";
-        const qty = cell.quantities.join(", ");
-        const times = cell.times.join(", ");
-        if (qty && times) return `${qty} (${times})`;
-        return qty || times || "";
-      }),
-    ]);
-
-    const sheetData = [headerRow, ...dataRows];
-    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-    // Căn độ rộng cột tự động
-    const colWidths = headerRow.map((h, i) => ({
-      wch: Math.max(
-        String(h).length,
-        ...dataRows.map((r) => String(r[i] ?? "").length)
-      ) + 2,
-    }));
-    ws["!cols"] = colWidths;
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Lịch sử xác nhận");
-
-    const tenKhoa = user?.tenKhoa ? `_${user.tenKhoa.replace(/\s+/g, "_")}` : "";
-    XLSX.writeFile(wb, `LichSuXacNhanThuoc_${date}${tenKhoa}.xlsx`);
-  }, [columns, filteredRows, date, user?.tenKhoa]);
 
   useEffect(() => {
     if (!activeColumnKey) return;
@@ -219,90 +216,68 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
   }, [activeColumnKey]);
 
   return (
-    <div className="space-y-4 px-3 md:px-6 pb-24 max-w-[1600px] mx-auto">
-      {/* Header card */}
-      <div className="bg-white rounded-[28px] md:rounded-[36px] border border-slate-100 shadow-sm p-4 md:p-6">
-        {/* Title row */}
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-600 text-white rounded-[18px] md:rounded-[22px] flex items-center justify-center text-xl md:text-2xl shadow-lg shadow-emerald-200 shrink-0">
-              <i className="fa-solid fa-clipboard-list"></i>
+    <div className="space-y-5 px-3 md:px-6 max-w-[1600px] mx-auto">
+      <div className="rounded-[32px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Chỉ Hiển Thị Lịch Sử
             </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-black text-slate-900 uppercase leading-none tracking-tighter">
-                Lịch Sử Xác Nhận
-              </h1>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
-                {user?.tenKhoa || "Khoa"}
-              </p>
+            <h1 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900 md:text-3xl">
+              Lịch Sử Xác Nhận Dùng Thuốc
+            </h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
+              <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sky-700">
+                Khoa: {user?.tenKhoa || "Khoa"}
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">
+                Bệnh nhân: {filteredRows.length}
+              </span>
+              <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-700">
+                Lượt xác nhận: {totalConfirmations}
+              </span>
+              <span className="rounded-full bg-violet-50 px-3 py-1.5 text-violet-700">
+                Thuốc: {columns.length}
+              </span>
             </div>
           </div>
 
-          {/* Export button */}
-          <button
-            type="button"
-            onClick={exportExcel}
-            disabled={filteredRows.length === 0 || columns.length === 0}
-            className="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            <i className="fa-solid fa-file-excel text-sm"></i>
-            <span className="hidden sm:inline">Xuất Excel</span>
-          </button>
-        </div>
-
-        {/* Controls row */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          {/* Search */}
-          <div className="relative flex-1">
-            <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm tên hoặc mã bệnh nhân..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-bold text-slate-800 outline-none focus:border-primary focus:bg-white transition"
-            />
-          </div>
-
-          {/* Date group */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative sm:w-[280px]">
+              <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Tìm tên hoặc mã bệnh nhân"
+                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-bold text-slate-800 outline-none focus:border-primary"
+              />
+            </div>
             <input
               type="date"
               value={draftDate}
               onChange={(e) => setDraftDate(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black text-slate-800 outline-none focus:border-primary focus:bg-white transition"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800 outline-none focus:border-primary"
             />
             <button
               type="button"
               onClick={() => setDate(draftDate)}
-              className="shrink-0 rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:opacity-90 transition"
+              className="rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-sm"
             >
-              Tìm
+              Tìm theo ngày
             </button>
             <button
               type="button"
-              onClick={() => { const t = formatDateInput(); setDraftDate(t); setDate(t); }}
-              className="shrink-0 rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-200 transition"
+              onClick={() => {
+                const today = formatDateInput();
+                setDraftDate(today);
+                setDate(today);
+              }}
+              className="rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-700"
             >
               Hôm nay
             </button>
           </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
-          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-black text-slate-600">
-            <i className="fa-solid fa-user-injured mr-1.5 text-slate-400"></i>
-            {filteredRows.length} bệnh nhân
-          </span>
-          <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700">
-            <i className="fa-solid fa-check-circle mr-1.5"></i>
-            {totalConfirmations} lượt xác nhận
-          </span>
-          <span className="rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-black text-violet-700">
-            <i className="fa-solid fa-pills mr-1.5"></i>
-            {columns.length} loại thuốc
-          </span>
         </div>
       </div>
 
@@ -403,6 +378,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
 
                         {columns.map((column) => {
                           const cell = row.cells[column.key];
+                          const shiftEntries = cell ? sortedShiftEntries(cell) : [];
+                          const sizing = getShiftCellSizing(shiftEntries.length, true);
 
                           return (
                             <td
@@ -412,23 +389,33 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                               {!cell ? (
                                 <div className="min-h-[56px]"></div>
                               ) : (
-                                <div className="flex min-h-[56px] flex-col items-center justify-center gap-1.5 text-center">
-                                  {cell.quantities.length > 0 && (
-                                    <div className="text-sm font-black text-primary">
-                                      {cell.quantities.join(", ")}
-                                    </div>
-                                  )}
+                                <div
+                                  className={`min-h-[56px] items-center justify-center text-center ${sizing.wrapGap} ${
+                                    shiftEntries.length > 1
+                                      ? "grid grid-cols-2 justify-items-center"
+                                      : "flex flex-col"
+                                  }`}
+                                >
+                                  {shiftEntries.map((shiftEntry) => (
+                                    <div key={shiftEntry.shift} className={`flex flex-col items-center ${sizing.itemGap}`}>
+                                      {shiftEntry.quantities.length > 0 && (
+                                        <div className={`${sizing.qty} font-black text-primary`}>
+                                          {shiftEntry.quantities.join(", ")}
+                                        </div>
+                                      )}
 
-                                  <div className="flex flex-wrap justify-center gap-1">
-                                    {cell.times.map((time) => (
-                                      <span
-                                        key={time}
-                                        className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-black text-sky-700"
-                                      >
-                                        {time}
-                                      </span>
-                                    ))}
-                                  </div>
+                                      <div className="flex flex-wrap justify-center gap-1">
+                                        {shiftEntry.times.map((time) => (
+                                          <span
+                                            key={time}
+                                            className={`rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                          >
+                                            {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </td>
@@ -507,6 +494,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
 
                       {columns.map((column) => {
                         const cell = row.cells[column.key];
+                        const shiftEntries = cell ? sortedShiftEntries(cell) : [];
+                        const sizing = getShiftCellSizing(shiftEntries.length, false);
 
                         return (
                           <td
@@ -516,23 +505,33 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                             {!cell ? (
                               <div></div>
                             ) : (
-                              <div className="flex min-h-[70px] flex-col items-center justify-center gap-2 text-center">
-                                {cell.quantities.length > 0 && (
-                                  <div className="text-lg font-black text-primary">
-                                    {cell.quantities.join(", ")}
-                                  </div>
-                                )}
+                              <div
+                                className={`min-h-[70px] items-center justify-center text-center ${sizing.wrapGap} ${
+                                  shiftEntries.length > 1
+                                    ? "grid grid-cols-2 justify-items-center"
+                                    : "flex flex-col"
+                                }`}
+                              >
+                                {shiftEntries.map((shiftEntry) => (
+                                  <div key={shiftEntry.shift} className={`flex flex-col items-center ${sizing.itemGap}`}>
+                                    {shiftEntry.quantities.length > 0 && (
+                                      <div className={`${sizing.qty} font-black text-primary`}>
+                                        {shiftEntry.quantities.join(", ")}
+                                      </div>
+                                    )}
 
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                  {cell.times.map((time) => (
-                                    <span
-                                      key={time}
-                                      className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black text-sky-700"
-                                    >
-                                      {time}
-                                    </span>
-                                  ))}
-                                </div>
+                                    <div className="flex flex-wrap justify-center gap-1.5">
+                                      {shiftEntry.times.map((time) => (
+                                        <span
+                                          key={time}
+                                          className={`rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                        >
+                                          {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </td>
