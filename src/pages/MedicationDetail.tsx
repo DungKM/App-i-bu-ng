@@ -46,7 +46,6 @@ export const MedicationDetail: React.FC = () => {
     hamLuong?: string | null;
     loaiThuoc?: string | null;
   } | null>(null);
-  const [pendingConfirmAll, setPendingConfirmAll] = useState<ConfirmAllMedUsagePayload | null>(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [actionDrug, setActionDrug] = useState<{
     idPhieuThuoc: string;
@@ -298,16 +297,15 @@ export const MedicationDetail: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => {
-              setPendingConfirmAll({
+            onClick={() =>
+              confirmAllMutation.mutate({
                 shift: activeShift,
                 tenBenhNhan: tenBenhNhan || "N/A",
                 maBenhNhan: maBenhNhan || "N/A",
                 tuoi: tuoi || null,
                 items: confirmAllItems,
-              });
-              setShowQRScanner(true);
-            }}
+              })
+            }
             disabled={
               !selectedEncounterId ||
               !hasConfirmableMedsInActiveShift ||
@@ -344,14 +342,10 @@ export const MedicationDetail: React.FC = () => {
         onClose={() => {
           setShowQRScanner(false);
           setPendingAction(null);
-          setPendingConfirmAll(null);
         }}
         onSuccess={() => {
           setShowQRScanner(false);
-          if (pendingConfirmAll) {
-            confirmAllMutation.mutate(pendingConfirmAll);
-            setPendingConfirmAll(null);
-          } else if (pendingAction) {
+          if (pendingAction) {
             if (pendingAction.type === "RETURN") {
               setReturnQuantity(pendingAction.qty);
               setReturnReason("");
