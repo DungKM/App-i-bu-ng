@@ -21,6 +21,11 @@ function sortedShiftEntries(cell: { shifts: Record<string, { shift: string; quan
   return Object.values(cell.shifts).sort((a, b) => SHIFT_ORDER.indexOf(a.shift) - SHIFT_ORDER.indexOf(b.shift));
 }
 
+function getColumnWidth(maxShiftCount: number, dense: boolean) {
+  if (maxShiftCount <= 1) return dense ? 72 : 88;
+  return dense ? 118 : 150;
+}
+
 function getShiftCellSizing(count: number, dense: boolean) {
   if (count <= 1) {
     return dense
@@ -60,6 +65,7 @@ type HistoryColumn = {
   tenThuoc: string;
   hamLuong?: string | null;
   loaiThuoc?: string | null;
+  maxShiftCount: number;
 };
 
 type HistoryCellShift = {
@@ -125,6 +131,7 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
           tenThuoc: item.tenThuoc,
           hamLuong: item.hamLuong ?? null,
           loaiThuoc: item.loaiThuoc ?? null,
+          maxShiftCount: 0,
         });
       }
 
@@ -162,6 +169,17 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
 
       cell.shifts[shiftKey] = shiftEntry;
       row.cells[columnKey] = cell;
+    });
+
+    const columnMaxShiftCount = new Map<string, number>();
+    rowMap.forEach((row) => {
+      Object.entries(row.cells).forEach(([columnKey, cell]) => {
+        const count = Object.keys(cell.shifts).length;
+        columnMaxShiftCount.set(columnKey, Math.max(columnMaxShiftCount.get(columnKey) ?? 0, count));
+      });
+    });
+    columnMap.forEach((column) => {
+      column.maxShiftCount = columnMaxShiftCount.get(column.key) ?? 0;
     });
 
     const sortedColumns = Array.from(columnMap.values()).sort((a, b) =>
@@ -320,10 +338,13 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                       <th className="sticky left-[160px] z-20 min-w-[56px] border-b border-r border-slate-200 bg-slate-100 px-2 py-3 text-center text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
                         Tuổi
                       </th>
-                      {columns.map((column) => (
+                      {columns.map((column) => {
+                        const width = getColumnWidth(column.maxShiftCount, true);
+                        return (
                         <th
                           key={`mobile-${column.key}`}
-                          className="relative h-[170px] min-w-[72px] max-w-[72px] border-b border-r border-slate-200 p-0 text-center align-bottom"
+                          style={{ minWidth: width, maxWidth: width }}
+                          className="relative h-[170px] border-b border-r border-slate-200 p-0 text-center align-bottom"
                         >
                           <div className="relative h-full w-full overflow-hidden">
                             <button
@@ -359,7 +380,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                             </div>
                           )}
                         </th>
-                      ))}
+                        );
+                      })}
                     </tr>
                   </thead>
 
@@ -408,7 +430,7 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                                         {shiftEntry.times.map((time) => (
                                           <span
                                             key={time}
-                                            className={`rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                            className={`whitespace-nowrap rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
                                           >
                                             {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
                                           </span>
@@ -438,10 +460,13 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                     <th className="sticky left-[220px] z-20 min-w-[72px] border-b border-r border-slate-200 bg-slate-100 px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                       Tuổi
                     </th>
-                    {columns.map((column) => (
+                    {columns.map((column) => {
+                      const width = getColumnWidth(column.maxShiftCount, false);
+                      return (
                       <th
                         key={column.key}
-                        className="relative h-[240px] min-w-[88px] max-w-[88px] border-b border-r border-slate-200 p-0 text-center align-bottom"
+                        style={{ minWidth: width, maxWidth: width }}
+                        className="relative h-[240px] border-b border-r border-slate-200 p-0 text-center align-bottom"
                       >
                         <div className="relative h-full w-full overflow-hidden">
                           <button
@@ -475,7 +500,8 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                           </div>
                         )}
                       </th>
-                    ))}
+                      );
+                    })}
                   </tr>
                 </thead>
 
@@ -524,7 +550,7 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
                                       {shiftEntry.times.map((time) => (
                                         <span
                                           key={time}
-                                          className={`rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
+                                          className={`whitespace-nowrap rounded-full bg-sky-50 ${sizing.badge} font-black text-sky-700`}
                                         >
                                           {shiftLabel(shiftEntry.shift) ? `${shiftLabel(shiftEntry.shift)} ${time}` : time}
                                         </span>
