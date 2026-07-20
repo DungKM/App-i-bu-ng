@@ -50,11 +50,15 @@ export const MedicationBedCard: React.FC<{
                             <div
                                 key={visit.id}
                                 onClick={() => {
-                                    const qs = new URLSearchParams({
+                                    const params: Record<string, string> = {
                                         maBenhNhan: visit.patientCode,
                                         tenBenhNhan: visit.patientName,
                                         tuoi: visit.patientAge ?? "",
-                                    }).toString();
+                                    };
+                                    if (visit.maLanVaoVien) {
+                                        params.maLanVaoVien = visit.maLanVaoVien;
+                                    }
+                                    const qs = new URLSearchParams(params).toString();
                                     navigate(`/medication/${visit.id}?${qs}`);
                                 }}
                                 className={`group p-3 rounded-[24px] border transition-all cursor-pointer hover:shadow-md ${getPatientStatusClasses(current)} ${highlightSearch ? "ring-2 ring-red-200 shadow-[0_10px_24px_rgba(239,68,68,0.16)]" : ""}`}
@@ -64,7 +68,7 @@ export const MedicationBedCard: React.FC<{
                                         {visit.patientName}
                                     </h3>
                                     <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400">
-                                        <span className="text-primary font-mono">{visit.patientCode}</span>
+                                        <span className="text-primary font-mono">{visit.maLanVaoVien ?? visit.patientCode}</span>
                                         <span>•</span>
                                         <span className="uppercase">{visit.patientGender ?? "--"}</span>
                                         <span>•</span>
