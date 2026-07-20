@@ -8,7 +8,6 @@ import { EncounterList } from "@/components/EncounterList";
 import { MedicationOrders } from "@/components/MedicationOrders";
 import { QRScannerModal } from "@/components/QRScannerModal";
 import { useAuth } from "@/context/AuthContext";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { getDonThuocByPhieuKham } from "@/services/dibuong.api";
 import {
   cancelConfirmedUsage,
@@ -28,7 +27,6 @@ export const MedicationDetail: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user: currentUser } = useAuth();
-  const { isEnabled } = useFeatureFlags();
 
   const maBenhNhan = searchParams.get("maBenhNhan") ?? "";
   const tenBenhNhan = searchParams.get("tenBenhNhan") ?? "";
@@ -301,19 +299,14 @@ export const MedicationDetail: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              const payload = {
+              setPendingConfirmAll({
                 shift: activeShift,
                 tenBenhNhan: tenBenhNhan || "N/A",
                 maBenhNhan: maBenhNhan || "N/A",
                 tuoi: tuoi || null,
                 items: confirmAllItems,
-              };
-              if (isEnabled("SHOW_QUET_MA")) {
-                setPendingConfirmAll(payload);
-                setShowQRScanner(true);
-              } else {
-                confirmAllMutation.mutate(payload);
-              }
+              });
+              setShowQRScanner(true);
             }}
             disabled={
               !selectedEncounterId ||
@@ -337,15 +330,9 @@ export const MedicationDetail: React.FC = () => {
         onAction={(data) => {
           if (data.type === "UNCONFIRM") {
             setActionDrug(data);
-          } else if (isEnabled("SHOW_QUET_MA")) {
+          } else {
             setPendingAction(data);
             setShowQRScanner(true);
-          } else {
-            if (data.type === "RETURN") {
-              setReturnQuantity(data.qty);
-              setReturnReason("");
-            }
-            setActionDrug(data);
           }
         }}
       />

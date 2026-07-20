@@ -15,7 +15,6 @@ const TreatmentList = lazyNamed(() => import('@/pages/TreatmentList'), 'Treatmen
 const UserProfile = lazyNamed(() => import('@/pages/UserProfile'), 'UserProfile');
 const UserAdminPage = lazyNamed(() => import('@/pages/UserAdminPage'), 'UserAdminPage');
 const DepartmentAdminPage = lazyNamed(() => import('@/pages/DepartmentAdminPage'), 'DepartmentAdminPage');
-const FeatureFlagAdminPage = lazyNamed(() => import('@/pages/FeatureFlagAdminPage'), 'FeatureFlagAdminPage');
 
 function lazyNamed<T extends React.ComponentType<any>>(
   loader: () => Promise<any>,
@@ -103,7 +102,6 @@ const App: React.FC = () => {
                     <Route path="/profile" element={<UserProfile />} />
                     <Route path="/admin/users" element={<UserAdminPage />} />
                     <Route path="/admin/departments" element={<DepartmentAdminPage />} />
-                    <Route path="/admin/feature-flags" element={<FeatureFlagAdminPage />} />
                   </Route>
                 </Route>
               </Routes>
