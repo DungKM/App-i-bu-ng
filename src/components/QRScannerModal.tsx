@@ -8,7 +8,6 @@ interface QRScannerModalProps {
   isOpen: boolean;
   expectedMaLanVaoVien: string | null;
   patientName: string;
-  successLabel?: string;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -17,7 +16,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   isOpen,
   expectedMaLanVaoVien,
   patientName,
-  successLabel = "Tiếp tục xác nhận thuốc",
   onSuccess,
   onClose,
 }) => {
@@ -51,7 +49,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
           },
         },
         videoRef.current,
-        (result, _error) => {
+        (result, error) => {
           if (result) {
             const code = result.getText();
             setScannedCode(code);
@@ -64,6 +62,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               stopScanner();
             }
           }
+          // ignore decode errors – they fire on every empty frame
         }
       );
 
@@ -219,7 +218,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             className="w-full rounded-[28px] bg-emerald-500 py-5 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 active:scale-95"
           >
             <i className="fa-solid fa-arrow-right mr-2"></i>
-            {successLabel}
+            Tiếp tục xác nhận thuốc
           </button>
         )}
 
