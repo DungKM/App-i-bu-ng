@@ -35,7 +35,6 @@ export const TreatmentList: React.FC = () => {
           id: ba.IdBenhAn,
           name: ba.HoTenBenhNhan,
           code: ba.MaBenhNhan,
-          maLanVaoVien: ba.MaLanVaoVien,
           room: phong.Ma,
           bed: giuong.MaGiuong,
           medicationToday:
@@ -69,7 +68,6 @@ export const TreatmentList: React.FC = () => {
               (patient) =>
                 (patient.name ?? "").toLowerCase().includes(s) ||
                 String(patient.code ?? "").toLowerCase().includes(s) ||
-                String(patient.maLanVaoVien ?? "").toLowerCase().includes(s) ||
                 String(patient.bed ?? "").toLowerCase().includes(s) ||
                 String(patient.room ?? "").toLowerCase().includes(s)
             );
@@ -138,7 +136,7 @@ export const TreatmentList: React.FC = () => {
           <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
-            placeholder="Tìm tên bệnh nhân, mã BN, mã lần vào viện..."
+            placeholder="Tìm tên bệnh nhân, mã số..."
             className="w-full pl-12 pr-6 py-4 rounded-3xl border-2 border-slate-300 bg-white
                  outline-none font-bold text-sm text-slate-800 shadow-sm
                  focus:border-primary/40 focus:ring-4 focus:ring-primary/10"
