@@ -61,6 +61,7 @@ export const MedicationConfirmationHistoryPage: React.FC = () => {
     retry: false,
     queryFn: () => getMedicationConfirmationHistory(date, user?.idKhoa),
   });
+  
 
   const resolvedData = useMemo(() => {
     const payload = data as any;
